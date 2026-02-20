@@ -1,7 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-// Items are stored as JSON inside the invoice table (simpler for now)
 const Invoice = sequelize.define('Invoice', {
   id: {
     type: DataTypes.INTEGER,
@@ -18,10 +17,15 @@ const Invoice = sequelize.define('Invoice', {
   },
   invoiceNumber: {
     type: DataTypes.STRING,
+    allowNull: false,
     unique: true
   },
   items: {
-    type: DataTypes.JSON,  // stores the items array as JSON in MySQL
+    type: DataTypes.JSON,
+    allowNull: false
+  },
+  subtotal: {
+    type: DataTypes.FLOAT,
     allowNull: false
   },
   tax: {
@@ -32,14 +36,12 @@ const Invoice = sequelize.define('Invoice', {
     type: DataTypes.FLOAT,
     defaultValue: 0
   },
-  subtotal: {
-    type: DataTypes.FLOAT
-  },
   total: {
-    type: DataTypes.FLOAT
+    type: DataTypes.FLOAT,
+    allowNull: false
   },
   status: {
-    type: DataTypes.ENUM('Unpaid', 'Paid', 'Overdue'),
+    type: DataTypes.ENUM('Paid', 'Unpaid', 'Overdue'),
     defaultValue: 'Unpaid'
   }
 }, {
