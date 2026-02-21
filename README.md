@@ -1,348 +1,96 @@
-``` # Invoicefy
+# Invoicefy
 
-Invoicefy is an invoice generating application with a React frontend and an Express + Sequelize backend.
-
-This repository currently includes:
-- `client/` (Vite + React)
-- `server/` (Node.js + Express + Sequelize + JWT auth + PDF generation)
+Invoicefy is a full-stack, professional invoicing and client management system built with modern web technologies. This application allows business owners to manage clients, track invoices, generate professional PDFs, and track payment statuses (Paid, Unpaid, Overdue) all from an intuitive dashboard.
 
 ---
 
-## Features Implemented
+## 🚀 Features
 
-### Business Onboarding & Auth
-- Register as **Business Owner**
-- Create business profile with:
-  - Business name
-  - GST number
-  - Address
-  - Optional logo upload
-- Login with email/password
-- JWT-based route protection
-
-### Client Management
-- Create client profile
-- Fetch all clients for the logged-in business
-
-### Invoice Management
-- Create invoice for a client
-- Auto-generate invoice number
-- Add multiple items (description, quantity, unit price)
-- Apply discount and tax
-- Automatic subtotal/tax/total calculation
-- Fetch invoice details
-- Update invoice status: `Paid`, `Unpaid`, `Overdue`
-
-### PDF Generation
-- Download invoice as a formatted PDF
-
-### Analytics
-- Dashboard metrics:
-  - total invoices
-  - paid/unpaid/overdue counts
-  - total revenue (paid invoices)
-  - outstanding amount
-  - invoices created in last 30 days
+- **Authentication System**: Secure login and registration for business owners.
+- **Interactive Dashboard**: View real-time aggregated metrics like Total                 Revenue, Outstanding amounts, and Invoice Statuses.
+- **Client Management**: Create and track profiles for your billing clients including Name, Email, Phone, and Address.
+- **Dynamic Invoicing System**: Create dynamic invoices with multiple auto-calculating line items, custom discount percentages, and tax processing.
+- **PDF Generation**: Generate beautiful, professional, printer-ready PDF invoices using the native backend on-the-fly.
+- **Status Tracking**: Keep track of pending payments by marking invoices as "Paid", "Unpaid", or "Overdue".
 
 ---
 
-## Tech Stack
+## 🛠️ Technology Stack
 
-### Frontend
-- React 19
-- Vite
+### Frontend (`/invoicefy-frontend`)
+- **React.js**: Front-end UI rendered as a Single Page Application.
+- **Tailwind CSS**: Utility-first CSS framework for a premium and seamless user interface.
+- **Axios**: Promised-based HTTP requests to hook into the backend.
+- **React Router**: For handling client-side routing and protected boundaries.
 
-### Backend
-- Node.js
-- Express
-- Sequelize ORM
-- SQLite (default local DB)
-- MySQL (optional via env)
-- JWT auth (`jsonwebtoken`)
-- Password hashing (`bcryptjs`)
-- File upload (`multer`)
-- PDF generation (`pdfkit`)
+### Backend (`/server`)
+- **Node.js & Express**: Extensible and lightweight backend server architecture.
+- **Sequelize ORM**: Connects the Node app to the database seamlessly.
+- **SQLite Database**: File-based database out of the box (`invoicefy.sqlite`), requires zero manual setup.
+- **PDFKit**: Server-side engine to generate and stream invoices as PDF downloads.
+- **JWT & Bcrypt**: Handles encrypted passwords and tokenized user sessions.
 
 ---
 
-## Project Structure
+## 📦 Project Structure
 
 ```text
-invoicefy/
-├── client/
-│   ├── src/
-│   └── package.json
-├── server/
-│   ├── analytics/
-│   ├── auth/
-│   ├── businesses/
-│   ├── clients/
-│   ├── config/
-│   ├── invoices/
-│   ├── middleware/
-│   ├── pdf-service/
-│   ├── uploads/
-│   ├── .env.example
-│   ├── app.js
-│   └── package.json
-└── README.md
+d:\invoicefy\
+│
+├── invoicefy-frontend/          # React.js Frontend
+│   ├── src/                     # React Source Code (Pages, Contexts, APIs)
+│   ├── tailwind.config.js       # Tailwind CSS Configuration
+│   └── package.json             # Frontend Dependencies
+│
+├── server/                      # Node.js + Express Backend
+│   ├── app.js                   # Main Node Entrypoint
+│   ├── invoicefy.sqlite         # SQLite Database (Auto-generated)
+│   ├── config/                  # Sequelize and DB connection
+│   ├── pdf-service/             # PDFKit Invoice Generator 
+│   ├── ... (Controllers, Routes, Models grouped by feature)
+│   └── package.json             # Backend Dependencies
+│
+├── start-frontend.bat           # Quickstart script for Frontend
+└── start-backend.bat            # Quickstart script for Backend
 ```
 
 ---
 
-## Backend Data Models
+## ⚡ Getting Started 
 
-### Business
-```json
-{
-  "name": "string",
-  "gstNumber": "string",
-  "address": "string",
-  "logoUrl": "string | null"
-}
-```
+You can use the shell scripts located in the root of the project to quickly spin up the environment.
 
-### User
-```json
-{
-  "businessId": "number",
-  "name": "string",
-  "email": "string",
-  "passwordHash": "string",
-  "role": "Business Owner"
-}
-```
+### Using the Quickstart Scripts
+1. Open terminal in the root directory (`d:\invoicefy`).
+2. Run the backend by double-clicking or typing `start-backend.bat`
+3. Run the frontend by double-clicking or typing `start-frontend.bat`
 
-### Client
-```json
-{
-  "businessId": "number",
-  "name": "string",
-  "email": "string",
-  "phone": "string",
-  "address": "string"
-}
-```
+### Manual Start 
+If you prefer running manual commands:
 
-### Invoice
-```json
-{
-  "businessId": "number",
-  "clientId": "number",
-  "invoiceNumber": "string",
-  "items": [
-    {
-      "description": "string",
-      "quantity": "number",
-      "unitPrice": "number"
-    }
-  ],
-  "subtotal": "number",
-  "tax": "number",
-  "discount": "number",
-  "total": "number",
-  "status": "Paid | Unpaid | Overdue",
-  "createdAt": "datetime"
-}
-```
-
----
-
-## API Documentation
-
-Base URL (local): `http://localhost:3000`
-
-### Health
-- `GET /health`
-
-### Auth
-- `POST /auth/register` *(multipart/form-data; supports `logo` file)*
-- `POST /auth/login`
-
-### Business
-- `GET /business/me` *(protected)*
-
-### Clients
-- `POST /client/create` *(protected)*
-- `GET /client/all` *(protected)*
-
-### Invoices
-- `POST /invoice/create` *(protected)*
-- `GET /invoice/:id` *(protected)*
-- `PUT /invoice/status` *(protected)*
-- `GET /invoice/download?id=<invoiceId>` *(protected, returns PDF)*
-
-### Analytics
-- `GET /analytics/dashboard` *(protected)*
-
----
-
-## Auth Header
-
-For protected routes include:
-
-```http
-Authorization: Bearer <your_jwt_token>
-```
-
----
-
-## Setup Instructions
-
-## 1) Clone repository
-
-```bash
-git clone <your-repo-url>
-cd invoicefy
-```
-
-## 2) Backend setup
-
+**Starting the Backend:**
 ```bash
 cd server
-cp .env.example .env
 npm install
 npm run dev
 ```
+*(Backend Server will start on `http://localhost:5000`)*
 
-Backend starts on `http://localhost:3000` by default.
-
-### `.env` options
-
-```env
-PORT=3000
-JWT_SECRET=replace-with-secure-secret
-
-# sqlite (default)
-DB_DIALECT=sqlite
-DB_STORAGE=./invoicefy.sqlite
-
-# mysql (optional)
-# DB_DIALECT=mysql
-# DB_NAME=invoicefy
-# DB_USER=root
-# DB_PASSWORD=
-# DB_HOST=localhost
-```
-
-## 3) Frontend setup
-
-Open new terminal:
-
+**Starting the Frontend:**
 ```bash
-cd client
+cd invoicefy-frontend
 npm install
-npm run dev
+npm start
 ```
-
-Frontend runs on Vite dev server (usually `http://localhost:5173`).
+*(React App will open on `http://localhost:3000`)*
 
 ---
 
-## Example Request Payloads
+## 👤 Default Flow to Test
 
-### Register Business Owner
-`POST /auth/register`
-
-Use `multipart/form-data`:
-- `ownerName`
-- `email`
-- `password`
-- `businessName`
-- `gstNumber`
-- `address`
-- `logo` (optional file)
-
-### Login
-`POST /auth/login`
-
-```json
-{
-  "email": "owner@invoicefy.com",
-  "password": "yourPassword"
-}
-```
-
-### Create Client
-`POST /client/create`
-
-```json
-{
-  "name": "Acme Corp",
-  "email": "billing@acme.com",
-  "phone": "+91-9876543210",
-  "address": "Bangalore, India"
-}
-```
-
-### Create Invoice
-`POST /invoice/create`
-
-```json
-{
-  "clientId": 1,
-  "items": [
-    {
-      "description": "Website Design",
-      "quantity": 2,
-      "unitPrice": 5000
-    },
-    {
-      "description": "Hosting",
-      "quantity": 1,
-      "unitPrice": 2000
-    }
-  ],
-  "tax": 18,
-  "discount": 10
-}
-```
-
-### Update Invoice Status
-`PUT /invoice/status`
-
-```json
-{
-  "invoiceId": 1,
-  "status": "Paid"
-}
-```
-
----
-
-## Notes
-
-- Invoice creation auto-computes:
-  - `subtotal`
-  - tax amount from tax %
-  - final `total` after discount + tax
-- Database tables are auto-synced on backend start (`sequelize.sync({ alter: true })`).
-- Uploaded business logos are served from `/uploads/<filename>`.
-
----
-
-## Troubleshooting
-
-- If `npm install` fails due to registry/network policy, retry in a network-enabled environment.
-- If JWT errors occur, verify:
-  - token is sent in `Authorization` header
-  - backend `JWT_SECRET` matches the token issuer
-- For MySQL mode, ensure server is running and credentials are correct in `.env`.
-
----
-
-## Future Improvements
-
-- Add request validation layer (Joi/Zod/express-validator)
-- Add pagination for clients/invoices
-- Add invoice list and search APIs
-- Add due-date based automatic overdue marking
-- Add unit/integration tests (Jest + Supertest)
-- Add Docker support for reproducible local/dev deployment
-
----
-
-## License
-
-This project currently has no explicit open-source license. Add a LICENSE file if you plan to publish/distribute it.
- ```
+1. Navigate to your app at `http://localhost:3000`.
+2. Ensure the backend is running alongside the frontend.
+3. Once loaded, click the **"Register"** button to establish your local database owner credentials.
+4. Go to **"Clients"** in the navigation bar to add your first mockup client.
+5. Hit **"Create Invoice"**, select your new client, and add a few line items to generate an invoice.
+6. Check your **"Invoices"** table and click **"Download PDF"** to test the server's PDF generator!

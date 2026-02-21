@@ -17,8 +17,28 @@ const analyticsRoutes = require('./analytics/analytics.routes');
 
 const app = express();
 
+// CORS — allow the React dev server to call the API
+app.use((req, res, next) => {
+  const allowedOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Simple request logger
+app.use((req, res, next) => {
+  console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.originalUrl}`);
+  next();
+});
 
 Business.hasMany(User, { foreignKey: 'businessId', onDelete: 'CASCADE' });
 User.belongsTo(Business, { foreignKey: 'businessId' });
@@ -34,11 +54,11 @@ Invoice.belongsTo(Client, { foreignKey: 'clientId' });
 
 app.get('/health', (req, res) => res.status(200).json({ success: true, message: 'Invoicefy API up' }));
 
-app.use('/auth', authRoutes);
-app.use('/business', businessRoutes);
-app.use('/client', clientRoutes);
-app.use('/invoice', invoiceRoutes);
-app.use('/analytics', analyticsRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/businesses', businessRoutes);
+app.use('/api/clients', clientRoutes);
+app.use('/api/invoices', invoiceRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 app.use((error, req, res, next) => {
   if (error) {
@@ -50,13 +70,13 @@ app.use((error, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 
 sequelize.authenticate()
-  .then(() => sequelize.sync({ alter: true }))
+  .then(() => sequelize.sync())
   .then(() => {
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });
   })
   .catch((err) => {
-    console.error('❌ Database connection/sync failed:', err.message);
+    console.error('❌ Database connection/sync failed:', err);
     process.exit(1);
   });

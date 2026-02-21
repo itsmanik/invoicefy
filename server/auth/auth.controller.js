@@ -34,6 +34,11 @@ exports.register = async (req, res) => {
       return res.status(409).json({ success: false, message: 'Email already exists' });
     }
 
+    const existingBusiness = await Business.findOne({ where: { gstNumber } });
+    if (existingBusiness) {
+      return res.status(409).json({ success: false, message: 'GST Number is already registered' });
+    }
+
     const logoUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
     const business = await Business.create({

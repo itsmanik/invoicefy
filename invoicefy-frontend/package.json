@@ -1,0 +1,44 @@
+{
+  "name": "invoicefy-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@headlessui/react": "^1.7.0",
+    "@heroicons/react": "^2.2.0",
+    "axios": "^1.13.5",
+    "date-fns": "^2.29.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.43.0",
+    "react-hot-toast": "^2.6.0",
+    "react-icons": "^4.7.1",
+    "react-query": "^3.39.0",
+    "react-router-dom": "^6.30.3",
+    "react-table": "^7.8.0",
+    "recharts": "^2.4.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.24",
+    "postcss": "^8.5.6",
+    "react-scripts": "5.0.1",
+    "tailwindcss": "^3.4.19"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
