@@ -1,3 +1,5 @@
+// server/invoices/invoice.model.js
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -43,7 +45,19 @@ const Invoice = sequelize.define('Invoice', {
   status: {
     type: DataTypes.ENUM('Paid', 'Unpaid', 'Overdue'),
     defaultValue: 'Unpaid'
+  },
+  // ── NEW: template & watermark ──────────────────────
+  template: {
+    type: DataTypes.STRING,
+    defaultValue: 'classic',   // 'classic' | 'minimal' | 'bold'
+    allowNull: false
+  },
+  watermark: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: ''           // e.g. 'DRAFT', 'PAID', 'CONFIDENTIAL', or empty
   }
+  // ────────────────────────────────────────────────────
 }, {
   tableName: 'invoices',
   timestamps: true
