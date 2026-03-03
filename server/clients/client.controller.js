@@ -20,6 +20,9 @@ exports.createClient = async (req, res) => {
 
     return res.status(201).json({ success: true, client });
   } catch (err) {
+    if (err.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(400).json({ success: false, message: 'Invalid business reference. Please log in again.' });
+    }
     return res.status(500).json({ success: false, message: err.message });
   }
 };

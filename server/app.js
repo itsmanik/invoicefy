@@ -70,7 +70,7 @@ app.use((error, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 
 sequelize.authenticate()
-  .then(() => sequelize.sync({force: true}))
+  .then(() => sequelize.sync())
   .then(() => {
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
