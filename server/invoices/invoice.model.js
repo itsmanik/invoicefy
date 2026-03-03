@@ -26,12 +26,13 @@ const Invoice = sequelize.define('Invoice', {
     unique: true
   },
 
+  // ✅ NEW: Invoice Date
   invoiceDate: {
     type: DataTypes.DATEONLY,
     allowNull: true
   },
 
-  // ✅ GST Numbers
+  // ✅ NEW: GST Numbers
   yourGST: {
     type: DataTypes.STRING,
     allowNull: true
@@ -52,28 +53,13 @@ const Invoice = sequelize.define('Invoice', {
     allowNull: false
   },
 
+  // ORIGINAL tax field (keep this)
+  tax: {
+    type: DataTypes.FLOAT,
+    defaultValue: 0
+  },
+
   discount: {
-    type: DataTypes.FLOAT,
-    defaultValue: 0
-  },
-
-  // ✅ GST Split
-  gstPercent: {
-    type: DataTypes.FLOAT,
-    defaultValue: 0
-  },
-
-  cgst: {
-    type: DataTypes.FLOAT,
-    defaultValue: 0
-  },
-
-  sgst: {
-    type: DataTypes.FLOAT,
-    defaultValue: 0
-  },
-
-  gstTotal: {
     type: DataTypes.FLOAT,
     defaultValue: 0
   },
@@ -88,12 +74,13 @@ const Invoice = sequelize.define('Invoice', {
     defaultValue: 'Unpaid'
   },
 
-  // ✅ Bank Details as JSON (not text)
+  // ✅ NEW: Bank Details (JSON format)
   bankDetails: {
     type: DataTypes.JSON,
     allowNull: true
   },
 
+  // ✅ NEW: 45 Day Disclaimer
   disclaimer: {
     type: DataTypes.TEXT,
     allowNull: true,
@@ -101,6 +88,7 @@ const Invoice = sequelize.define('Invoice', {
       "Payment expected within 45 days from invoice date. Invoice will not be valid after 45 days."
   },
 
+  // ORIGINAL template & watermark
   template: {
     type: DataTypes.STRING,
     defaultValue: 'classic',

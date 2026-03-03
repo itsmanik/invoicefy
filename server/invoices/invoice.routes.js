@@ -18,6 +18,7 @@ router.get('/all', requireAuth, async (req, res) => {
         });
         return res.status(200).json({ success: true, invoices });
     } catch (err) {
+            console.error("INVOICES /all ERROR:", err);   // 👈 ADD THIS
         return res.status(500).json({ success: false, message: err.message });
     }
 });
