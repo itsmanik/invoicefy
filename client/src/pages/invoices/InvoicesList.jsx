@@ -106,7 +106,7 @@ const InvoicesList = () => {
                                             {invoice.client?.name || `Client #${invoice.clientId}`}
                                         </td>
                                         <td className="px-8 py-5 whitespace-nowrap text-sm text-slate-500">
-                                            {new Date(invoice.createdAt).toLocaleDateString()}
+                                            {new Date(invoice.invoiceDate || invoice.createdAt).toLocaleDateString()}
                                         </td>
                                         <td className="px-8 py-5 whitespace-nowrap text-sm text-slate-900 font-bold">
                                             {formatCurrency(invoice.total)}

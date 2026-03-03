@@ -33,7 +33,7 @@ const renderClassic = (doc, invoice, client) => {
   doc.fillColor(primaryColor).fontSize(28).text('INVOICE', 50, 50, { align: 'right' });
   doc.fillColor(secondaryColor).fontSize(10)
      .text(`Invoice Number: ${invoice.invoiceNumber}`, { align: 'right' })
-     .text(`Date: ${new Date(invoice.createdAt).toLocaleDateString()}`, { align: 'right' })
+     .text(`Date: ${new Date(invoice.invoiceDate || invoice.createdAt).toLocaleDateString()}`, { align: 'right' })
      .text(`Status: ${invoice.status.toUpperCase()}`, { align: 'right' });
 
   doc.fillColor('#111827').fontSize(20).text('Invoicefy', 50, 50);
@@ -46,7 +46,9 @@ const renderClassic = (doc, invoice, client) => {
   doc.fillColor(secondaryColor).fontSize(10)
      .text(client?.address || 'N/A')
      .text(client?.email   || 'N/A')
-     .text(client?.phone   || 'N/A');
+     .text(client?.phone   || 'N/A')
+     .text(`Client GST: ${invoice.clientGST || client?.gstNumber || 'N/A'}`)
+     .text(`Your GST: ${invoice.yourGST || 'N/A'}`);
 
   // Table header
   const tableTop = 260;
@@ -64,7 +66,7 @@ const renderClassic = (doc, invoice, client) => {
     const lineTotal = (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0);
     if (position > 700) { doc.addPage(); position = 50; }
     doc.fontSize(10)
-       .text(item.description,         60,  position)
+       .text(`${item.description}${item.hsn ? ` (HSN: ${item.hsn})` : ''}`,         60,  position)
        .text(item.quantity.toString(), 280,  position, { width: 60,  align: 'right' })
        .text(formatCurr(item.unitPrice), 350, position, { width: 70,  align: 'right' })
        .text(formatCurr(lineTotal),     430,  position, { width: 105, align: 'right' });
@@ -103,7 +105,8 @@ const renderClassic = (doc, invoice, client) => {
 
   // Footer
   doc.fontSize(10).fillColor(secondaryColor)
-     .text('Thank you for your business!', 50, 750, { align: 'center', width: 495 });
+     .text(invoice.disclaimer || 'Payment expected within 45 days from invoice date. Invoice will not be valid after 45 days.', 50, 736, { align: 'center', width: 495 })
+     .text(invoice.bankDetails ? `Bank: ${invoice.bankDetails.bankName || '-'} | A/C: ${invoice.bankDetails.accountNumber || '-'} | IFSC: ${invoice.bankDetails.ifsc || '-'} | UPI: ${invoice.bankDetails.upiId || '-'}` : '', 50, 760, { align: 'center', width: 495 });
 };
 
 // ─── TEMPLATE: minimal (clean black & white) ─────────────────────────────────
@@ -125,7 +128,7 @@ const renderMinimal = (doc, invoice, client) => {
   // Meta row
   doc.fillColor(gray).fontSize(9)
      .text(`Invoice No: ${invoice.invoiceNumber}`, 50, 95)
-     .text(`Date: ${new Date(invoice.createdAt).toLocaleDateString()}`, 200, 95)
+     .text(`Date: ${new Date(invoice.invoiceDate || invoice.createdAt).toLocaleDateString()}`, 200, 95)
      .text(`Status: ${invoice.status.toUpperCase()}`, 400, 95);
 
   // Bill To
@@ -154,7 +157,7 @@ const renderMinimal = (doc, invoice, client) => {
     const lineTotal = (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0);
     if (position > 700) { doc.addPage(); position = 50; }
     doc.fillColor(black).fontSize(10)
-       .text(item.description,           60,  position)
+       .text(`${item.description}${item.hsn ? ` (HSN: ${item.hsn})` : ''}`,           60,  position)
        .text(item.quantity.toString(),   295,  position, { width: 45,  align: 'right' })
        .text(formatCurr(item.unitPrice), 350,  position, { width: 80,  align: 'right' })
        .text(formatCurr(lineTotal),      440,  position, { width: 95,  align: 'right' });
@@ -188,7 +191,8 @@ const renderMinimal = (doc, invoice, client) => {
 
   // Footer
   doc.fontSize(9).font('Helvetica').fillColor(gray)
-     .text('Thank you for your business.', 50, 755, { align: 'center', width: 495 });
+     .text(invoice.disclaimer || 'Payment expected within 45 days from invoice date. Invoice will not be valid after 45 days.', 50, 740, { align: 'center', width: 495 })
+     .text(invoice.bankDetails ? `Bank: ${invoice.bankDetails.bankName || '-'} | A/C: ${invoice.bankDetails.accountNumber || '-'} | IFSC: ${invoice.bankDetails.ifsc || '-'} | UPI: ${invoice.bankDetails.upiId || '-'}` : '', 50, 760, { align: 'center', width: 495 });
 };
 
 // ─── TEMPLATE: bold (dark navy header band) ──────────────────────────────────
@@ -211,7 +215,7 @@ const renderBold = (doc, invoice, client) => {
   // Invoice meta in banner
   doc.fillColor('#94A3B8').fontSize(9).font('Helvetica')
      .text(`No: ${invoice.invoiceNumber}`, 50, 70)
-     .text(`Date: ${new Date(invoice.createdAt).toLocaleDateString()}`, 200, 70)
+     .text(`Date: ${new Date(invoice.invoiceDate || invoice.createdAt).toLocaleDateString()}`, 200, 70)
      .text(`Status: ${invoice.status.toUpperCase()}`, 400, 70);
 
   // Bill to section
@@ -220,7 +224,9 @@ const renderBold = (doc, invoice, client) => {
   doc.fillColor(bodyText).fontSize(9).font('Helvetica')
      .text(client?.address || '', 50, 162)
      .text(client?.email   || '', 50, 174)
-     .text(client?.phone   || '', 50, 186);
+     .text(client?.phone   || '', 50, 186)
+     .text(`Client GST: ${invoice.clientGST || client?.gstNumber || 'N/A'}`, 50, 198)
+     .text(`Your GST: ${invoice.yourGST || 'N/A'}`, 50, 210);
 
   // Accent bar above table
   const tableTop = 220;
@@ -238,7 +244,7 @@ const renderBold = (doc, invoice, client) => {
     if (position > 700) { doc.addPage(); position = 50; }
     if (i % 2 === 0) doc.rect(50, position - 2, 495, 22).fill(offWhite);
     doc.fillColor(bodyText).fontSize(10).font('Helvetica')
-       .text(item.description,            60,  position)
+       .text(`${item.description}${item.hsn ? ` (HSN: ${item.hsn})` : ''}`,            60,  position)
        .text(item.quantity.toString(),    295,  position, { width: 45,  align: 'right' })
        .text(formatCurr(item.unitPrice),  350,  position, { width: 80,  align: 'right' })
        .text(formatCurr(lineTotal),       440,  position, { width: 95,  align: 'right' });
@@ -274,7 +280,8 @@ const renderBold = (doc, invoice, client) => {
   // Footer bar
   doc.rect(0, 770, 595, 72).fill(navy);
   doc.fillColor('#94A3B8').fontSize(9).font('Helvetica')
-     .text('Thank you for your business! | Invoicefy', 50, 784, { align: 'center', width: 495 });
+     .text(invoice.disclaimer || 'Payment expected within 45 days from invoice date. Invoice will not be valid after 45 days.', 50, 780, { align: 'center', width: 495 })
+     .text(invoice.bankDetails ? `Bank: ${invoice.bankDetails.bankName || '-'} | A/C: ${invoice.bankDetails.accountNumber || '-'} | IFSC: ${invoice.bankDetails.ifsc || '-'} | UPI: ${invoice.bankDetails.upiId || '-'}` : '', 50, 796, { align: 'center', width: 495 });
 };
 
 // ─── Main export ──────────────────────────────────────────────────────────────

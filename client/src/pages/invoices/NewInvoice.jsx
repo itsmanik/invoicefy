@@ -98,7 +98,12 @@ const NewInvoice = () => {
   const [clientId,   setClientId]   = useState('');
   const [tax,        setTax]        = useState(0);
   const [discount,   setDiscount]   = useState(0);
-  const [items,      setItems]      = useState([{ description: '', quantity: 1, unitPrice: 0 }]);
+  const [items,      setItems]      = useState([{ description: '', hsn: '', quantity: 1, unitPrice: 0 }]);
+  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [yourGST, setYourGST] = useState('');
+  const [clientGST, setClientGST] = useState('');
+  const [disclaimer, setDisclaimer] = useState('Payment expected within 45 days from invoice date. Invoice will not be valid after 45 days.');
+  const [bankDetails, setBankDetails] = useState({ accountName: '', accountNumber: '', ifsc: '', bankName: '', upiId: '' });
   const [template,   setTemplate]   = useState('classic');   // ← NEW
   const [watermark,  setWatermark]  = useState('');          // ← NEW
 
@@ -111,6 +116,8 @@ const NewInvoice = () => {
     try {
       const res = await clientsAPI.getAll();
       setClients(res.data?.clients || []);
+      const business = JSON.parse(localStorage.getItem('business') || '{}');
+      if (business?.gstNumber) setYourGST(business.gstNumber);
     } catch {
       toast.error('Failed to load clients. Please try again.');
     } finally {
@@ -136,7 +143,7 @@ const NewInvoice = () => {
     setItems(newItems);
   };
 
-  const addItemRow    = ()      => setItems([...items, { description: '', quantity: 1, unitPrice: 0 }]);
+  const addItemRow    = ()      => setItems([...items, { description: '', hsn: '', quantity: 1, unitPrice: 0 }]);
   const removeItemRow = (index) => { if (items.length > 1) setItems(items.filter((_, i) => i !== index)); };
 
   const handleSubmit = async (e) => {
@@ -152,6 +159,11 @@ const NewInvoice = () => {
         items:    validItems,
         tax:      parseFloat(tax)      || 0,
         discount: parseFloat(discount) || 0,
+        invoiceDate,
+        yourGST,
+        clientGST,
+        disclaimer,
+        bankDetails,
         template,    // ← NEW
         watermark    // ← NEW
       });
@@ -195,7 +207,11 @@ const NewInvoice = () => {
                 <select
                   required
                   value={clientId}
-                  onChange={(e) => setClientId(e.target.value)}
+                  onChange={(e) => {
+                    const selectedClient = clients.find((c) => String(c.id) === e.target.value);
+                    setClientId(e.target.value);
+                    setClientGST(selectedClient?.gstNumber || '');
+                  }}
                   className="block w-full px-4 py-3 text-base border-slate-200 bg-slate-50 focus:bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-xl border transition-all"
                 >
                   <option value="">Select a client...</option>
@@ -206,11 +222,33 @@ const NewInvoice = () => {
               )}
             </div>
             <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Invoice Date *</label>
+              <input
+                type="date"
+                required
+                value={invoiceDate}
+                onChange={(e) => setInvoiceDate(e.target.value)}
+                className="block w-full border-slate-200 bg-white text-slate-700 rounded-xl px-4 py-3 border font-medium"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Invoice Number</label>
               <input
                 type="text" disabled value="[Auto-generated on save]"
                 className="block w-full border-slate-200 bg-slate-100 text-slate-500 rounded-xl px-4 py-3 border font-medium"
               />
+            </div>
+          </div>
+
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-8 border-b border-slate-100">
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Your GST Number</label>
+              <input type="text" value={yourGST} onChange={(e) => setYourGST(e.target.value.toUpperCase())} className="block w-full border-slate-200 rounded-xl px-4 py-3 border" placeholder="22AAAAA0000A1Z5" />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Client GST Number</label>
+              <input type="text" value={clientGST} onChange={(e) => setClientGST(e.target.value.toUpperCase())} className="block w-full border-slate-200 rounded-xl px-4 py-3 border" placeholder="Client GST" />
             </div>
           </div>
 
@@ -290,20 +328,29 @@ const NewInvoice = () => {
             <h3 className="text-xl font-bold text-slate-900 mb-6 border-b pb-3 block">Invoice Line Items</h3>
             <div className="space-y-4">
               <div className="hidden sm:grid sm:grid-cols-12 sm:gap-6 text-xs font-bold text-slate-400 uppercase tracking-widest px-4 mb-2">
-                <div className="sm:col-span-6">Description</div>
+                <div className="sm:col-span-5">Description</div>
+                <div className="sm:col-span-2">HSN Code</div>
                 <div className="sm:col-span-2">Quantity</div>
-                <div className="sm:col-span-3">Unit Price (₹)</div>
+                <div className="sm:col-span-2">Unit Price (₹)</div>
                 <div className="sm:col-span-1"></div>
               </div>
 
               {items.map((item, index) => (
                 <div key={index} className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center bg-slate-50 p-4 rounded-2xl border border-transparent focus-within:border-blue-200 focus-within:bg-white transition-all">
-                  <div className="sm:col-span-6">
+                  <div className="sm:col-span-5">
                     <input
                       type="text" required placeholder="Item description"
                       value={item.description}
                       onChange={(e) => handleItemChange(index, 'description', e.target.value)}
                       className="block w-full border-slate-200 rounded-xl px-4 py-2 border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-slate-900 placeholder-slate-400"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <input
+                      type="text" placeholder="HSN/SAC"
+                      value={item.hsn || ''}
+                      onChange={(e) => handleItemChange(index, 'hsn', e.target.value)}
+                      className="block w-full border-slate-200 rounded-xl px-4 py-2 border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                     />
                   </div>
                   <div className="sm:col-span-2">
@@ -314,7 +361,7 @@ const NewInvoice = () => {
                       className="block w-full border-slate-200 rounded-xl px-4 py-2 border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-slate-900 text-center sm:text-left"
                     />
                   </div>
-                  <div className="sm:col-span-3">
+                  <div className="sm:col-span-2">
                     <input
                       type="number" required min="0" step="0.01"
                       value={item.unitPrice}
@@ -359,7 +406,7 @@ const NewInvoice = () => {
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-bold text-slate-600">Tax (%)</label>
+                  <label className="text-sm font-bold text-slate-600">GST (%) - auto calculated</label>
                   <input
                     type="number" min="0" max="100" step="0.1"
                     value={tax} onChange={(e) => setTax(e.target.value)}
@@ -398,7 +445,26 @@ const NewInvoice = () => {
                   {watermark && <span>Watermark: <span className="text-slate-200 font-semibold">{watermark}</span></span>}
                 </div>
               </div>
+
+              <div className="space-y-3 bg-slate-50 p-6 rounded-3xl border border-slate-100 h-fit">
+                <h4 className="font-bold text-slate-900 mb-2">Payment / Bank Details</h4>
+                {['accountName','accountNumber','ifsc','bankName','upiId'].map((field) => (
+                  <input
+                    key={field}
+                    type="text"
+                    value={bankDetails[field]}
+                    onChange={(e) => setBankDetails({ ...bankDetails, [field]: e.target.value })}
+                    placeholder={field.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase())}
+                    className="block w-full border-slate-200 rounded-xl px-4 py-2 border"
+                  />
+                ))}
+              </div>
+
             </div>
+          </div>
+          <div className="pt-2">
+            <label className="block text-sm font-bold text-slate-700 mb-2">Disclaimer</label>
+            <textarea value={disclaimer} onChange={(e) => setDisclaimer(e.target.value)} rows={2} className="block w-full border-slate-200 rounded-xl px-4 py-3 border" />
           </div>
         </div>
 

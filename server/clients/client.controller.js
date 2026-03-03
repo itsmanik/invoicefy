@@ -3,7 +3,7 @@ const Client = require('./client.model');
 exports.createClient = async (req, res) => {
   try {
     const businessId = req.user.businessId;
-    const { name, email, phone, address } = req.body;
+    const { name, email, phone, address, gstNumber } = req.body;
 
     if (!name || !email) {
       return res.status(400).json({ success: false, message: 'name and email are required' });
@@ -14,7 +14,8 @@ exports.createClient = async (req, res) => {
       name,
       email,
       phone,
-      address
+      address,
+      gstNumber
     });
 
     return res.status(201).json({ success: true, client });

@@ -83,10 +83,10 @@ exports.createInvoice = async (req, res) => {
       invoiceNumber: generateInvoiceNumber(),
 
       // ✅ Added Fields (No structure change)
-      invoiceDate: invoiceDate || new Date(),
-      yourGST: yourGST || '',
-      clientGST: clientGST || '',
-      bankDetails: bankDetails || null,
+      invoiceDate: invoiceDate || new Date().toISOString().slice(0, 10),
+      yourGST: (yourGST || '').trim(),
+      clientGST: (clientGST || client.gstNumber || '').trim(),
+      bankDetails: bankDetails && Object.values(bankDetails).some((val) => String(val || '').trim()) ? bankDetails : null,
       disclaimer:
         disclaimer ||
         "Payment expected within 45 days from invoice date. Invoice will not be valid after 45 days.",

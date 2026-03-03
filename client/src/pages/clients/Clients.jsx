@@ -14,7 +14,8 @@ const Clients = () => {
         name: '',
         email: '',
         phone: '',
-        address: ''
+        address: '',
+        gstNumber: ''
     });
     const [submitting, setSubmitting] = useState(false);
 
@@ -45,7 +46,7 @@ const Clients = () => {
             const res = await clientsAPI.create(formData);
             toast.success('Client added successfully');
             setClients([res.data.client, ...clients]);
-            setFormData({ name: '', email: '', phone: '', address: '' });
+            setFormData({ name: '', email: '', phone: '', address: '', gstNumber: '' });
             setShowForm(false);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to add client');
@@ -105,6 +106,15 @@ const Clients = () => {
                                     placeholder="+1 (555) 000-0000"
                                 />
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">GST Number</label>
+                                <input
+                                    type="text" name="gstNumber" value={formData.gstNumber} onChange={handleChange}
+                                    className="appearance-none block w-full px-4 py-3 rounded-xl border border-slate-200 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    placeholder="22AAAAA0000A1Z5"
+                                />
+                            </div>
+
                             <div className="sm:col-span-2">
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Billing Address</label>
                                 <textarea
