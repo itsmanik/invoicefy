@@ -70,8 +70,17 @@ app.use((error, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 
 sequelize.authenticate()
-  .then(() => sequelize.sync())
-  .then(() => {
+  .then(async () => {
+    // If using SQLite, we temporarily disable foreign keys during sync to avoid constraint errors
+    if (sequelize.getDialect() === 'sqlite') {
+      await sequelize.query('PRAGMA foreign_keys = OFF');
+    }
+    return sequelize.sync({ alter: true });
+  })
+  .then(async () => {
+    if (sequelize.getDialect() === 'sqlite') {
+      await sequelize.query('PRAGMA foreign_keys = ON');
+    }
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });

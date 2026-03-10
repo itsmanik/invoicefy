@@ -74,7 +74,7 @@ const InvoicesList = () => {
                     <p className="text-slate-500 mt-1">Track and manage your billing</p>
                 </div>
                 <Link
-                    to="/invoices/new"
+                    to="/invoices/pro"
                     className="mt-4 md:mt-0 inline-flex items-center px-6 py-3 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-all hover:shadow-lg active:scale-95"
                 >
                     <PlusIcon className="-ml-1 mr-2 h-5 w-5" />

@@ -11,6 +11,7 @@ import Register from './pages/auth/Register';
 import Clients from './pages/clients/Clients';
 import InvoicesList from './pages/invoices/InvoicesList';
 import NewInvoice from './pages/invoices/NewInvoice';
+import InvoicePro from './pages/invoices/InvoicePro';
 
 // Layout Component
 const Layout = ({ children }) => {
@@ -129,6 +130,15 @@ function App() {
                                 <Layout>
                                     <NewInvoice />
                                 </Layout>
+                            </PrivateRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/invoices/pro"
+                        element={
+                            <PrivateRoute>
+                                <InvoicePro />
                             </PrivateRoute>
                         }
                     />
