@@ -25,26 +25,26 @@ const getNextDocumentNumber = async (businessId, documentType) => {
   return `${prefix}-${String(nextSerial).padStart(4, '0')}`;
 };
 
-const sanitizeTemplateSettings = (template, settings = {}) => {
-  const value = settings && typeof settings === 'object' ? settings : {};
-  const defaults = {
-    classic: { headerColor: '#2563EB', accentColor: '#1d4ed8' },
-    minimal: { headerColor: '#111827', accentColor: '#6B7280' },
-    bold: { headerColor: '#1E293B', accentColor: '#F59E0B' }
-  };
+// const sanitizeTemplateSettings = (template, settings = {}) => {
+//   const value = settings && typeof settings === 'object' ? settings : {};
+//   const defaults = {
+//     classic: { headerColor: '#2563EB', accentColor: '#1d4ed8' },
+//     minimal: { headerColor: '#111827', accentColor: '#6B7280' },
+//     bold: { headerColor: '#1E293B', accentColor: '#F59E0B' }
+//   };
 
-  const fallback = defaults[template] || defaults.classic;
+//   const fallback = defaults[template] || defaults.classic;
 
-  return {
-    companyName: String(value.companyName || 'Invoicefy').trim().slice(0, 80),
-    companyEmail: String(value.companyEmail || '').trim().slice(0, 120),
-    companyAddress: String(value.companyAddress || '').trim().slice(0, 240),
-    headerColor: /^#[0-9A-Fa-f]{6}$/.test(value.headerColor || '') ? value.headerColor : fallback.headerColor,
-    accentColor: /^#[0-9A-Fa-f]{6}$/.test(value.accentColor || '') ? value.accentColor : fallback.accentColor,
-    compactMode: Boolean(value.compactMode),
-    showRowDividers: value.showRowDividers !== false,
-  };
-};
+//   return {
+//     companyName: String(value.companyName || 'Invoicefy').trim().slice(0, 80),
+//     companyEmail: String(value.companyEmail || '').trim().slice(0, 120),
+//     companyAddress: String(value.companyAddress || '').trim().slice(0, 240),
+//     headerColor: /^#[0-9A-Fa-f]{6}$/.test(value.headerColor || '') ? value.headerColor : fallback.headerColor,
+//     accentColor: /^#[0-9A-Fa-f]{6}$/.test(value.accentColor || '') ? value.accentColor : fallback.accentColor,
+//     compactMode: Boolean(value.compactMode),
+//     showRowDividers: value.showRowDividers !== false,
+//   };
+// };
 
 
 const sanitizeTemplateSettings = (template, settings = {}) => {
