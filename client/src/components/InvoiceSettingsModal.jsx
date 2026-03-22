@@ -139,7 +139,7 @@ export default function InvoiceSettingsModal({ open, onClose, settings, onChange
           {/* ── TEMPLATES ── */}
           {tab === 'templates' && (
             <div className="space-y-5">
-              <p className="text-sm text-slate-500">Choose the same PDF layout that will be used when the invoice is downloaded.</p>
+              <p className="text-sm text-slate-500">Choose a PDF layout, then fine-tune the colors and spacing that will also be used in the downloaded invoice.</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {PRESET_TEMPLATES.map(t => (
                   <button
@@ -162,6 +162,66 @@ export default function InvoiceSettingsModal({ open, onClose, settings, onChange
                     </div>
                   </button>
                 ))}
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">Template customization</h3>
+                  <p className="mt-1 text-xs text-slate-500">These options affect both the live preview and the downloaded PDF.</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Header color</label>
+                    <input
+                      type="color"
+                      value={settings.tableColor || '#2563eb'}
+                      onChange={e => onChange({ ...settings, tableColor: e.target.value })}
+                      className="h-11 w-full rounded-lg border border-slate-200 bg-white cursor-pointer"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Accent color</label>
+                    <input
+                      type="color"
+                      value={settings.primaryColor || '#1d4ed8'}
+                      onChange={e => onChange({ ...settings, primaryColor: e.target.value })}
+                      className="h-11 w-full rounded-lg border border-slate-200 bg-white cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Spacing</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onChange({ ...settings, compactMode: false })}
+                        className={`rounded-lg border px-3 py-2 text-sm font-medium ${!settings.compactMode ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600'}`}
+                      >
+                        Comfortable
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onChange({ ...settings, compactMode: true })}
+                        className={`rounded-lg border px-3 py-2 text-sm font-medium ${settings.compactMode ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600'}`}
+                      >
+                        Compact
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Table styling</label>
+                    <button
+                      type="button"
+                      onClick={() => onChange({ ...settings, showRowDividers: settings.showRowDividers === false })}
+                      className={`w-full rounded-lg border px-3 py-2 text-sm font-medium ${settings.showRowDividers !== false ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600'}`}
+                    >
+                      {settings.showRowDividers !== false ? 'Row dividers on' : 'Row dividers off'}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}

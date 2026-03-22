@@ -16,9 +16,13 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
   const template = settings.templateId || 'classic';
   const invoiceNumber = `${settings.invoicePrefix || 'INV'}-001`;
   const visibleItems = form.items.filter(i => i.description);
+  const headerColor = settings.tableColor || (template === 'minimal' ? '#111827' : template === 'bold' ? '#1E293B' : '#2563EB');
+  const accentColor = settings.primaryColor || (template === 'minimal' ? '#6B7280' : template === 'bold' ? '#F59E0B' : '#1d4ed8');
+  const compactMode = Boolean(settings.compactMode);
+  const showRowDividers = settings.showRowDividers !== false;
 
   const renderRows = (rowClass = '', amountClass = '') => visibleItems.length ? visibleItems.map((item, idx) => (
-    <tr key={idx} className={rowClass ? rowClass(idx) : ''}>
+    <tr key={idx} className={rowClass ? rowClass(idx) : ''} style={showRowDividers ? undefined : { borderBottom: 'none' }}>
       <td className="px-3 py-2 text-slate-700">
         {item.description}
         {item.hsn ? <span className="text-slate-400"> (HSN: {item.hsn})</span> : null}
@@ -52,9 +56,9 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 py-5">
+          <div className={`grid grid-cols-2 gap-4 ${compactMode ? 'py-3' : 'py-5'}`}>
             <div>
-              <p className="text-[8px] font-bold tracking-[0.25em] text-slate-500">BILL TO</p>
+              <p className="text-[8px] font-bold tracking-[0.25em]" style={{ color: accentColor }}>BILL TO</p>
               <p className="mt-2 font-semibold text-slate-900">{client?.name || '— Client Name —'}</p>
               <p className="text-[9px] text-slate-500 leading-tight">{client?.address || ''}</p>
               <p className="text-[9px] text-slate-500">{client?.email || ''}</p>
@@ -79,11 +83,11 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
             <tbody>{renderRows(() => 'border-b border-slate-200', 'text-slate-900')}</tbody>
           </table>
 
-          <div className="ml-auto mt-5 w-48 space-y-2 text-[9px] text-slate-600">
+          <div className={`ml-auto w-48 space-y-2 text-[9px] text-slate-600 ${compactMode ? 'mt-3' : 'mt-5'}`}>
             <div className="flex justify-between"><span>Subtotal:</span><span>{fmt(subtotal)}</span></div>
             {parseFloat(form.discount) > 0 && <div className="flex justify-between"><span>Discount ({form.discount}%):</span><span>-{fmt(discAmt)}</span></div>}
             {parseFloat(form.tax) > 0 && <div className="flex justify-between"><span>Tax:</span><span>+{fmt(taxAmt)}</span></div>}
-            <div className="flex justify-between border-t-2 border-slate-900 pt-2 text-sm font-bold text-slate-900"><span>TOTAL</span><span>{fmt(total)}</span></div>
+            <div className="flex justify-between border-t-2 pt-2 text-sm font-bold" style={{ borderColor: headerColor, color: headerColor }}><span>TOTAL</span><span>{fmt(total)}</span></div>
           </div>
         </div>
       </div>
@@ -93,7 +97,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
   if (template === 'bold') {
     return (
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden text-[10px] text-slate-800 shadow-inner">
-        <div className="bg-slate-800 px-6 py-5 text-white">
+        <div className="px-6 py-5 text-white" style={{ background: headerColor }}>
           <div className="flex items-start justify-between">
             <div>
               <div className="text-xl font-bold">{settings.companyName || 'Invoicefy'}</div>
@@ -103,7 +107,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-black tracking-[0.2em] text-amber-400">INVOICE</div>
+              <div className="text-2xl font-black tracking-[0.2em]" style={{ color: accentColor }}>INVOICE</div>
               <div className="mt-2 text-[9px] text-slate-300">No: {invoiceNumber}</div>
               <div className="text-[9px] text-slate-300">Date: {form.invoiceDate || '—'}</div>
             </div>
@@ -111,9 +115,9 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
         </div>
 
         <div className="px-6 py-5">
-          <div className="grid grid-cols-2 gap-4 pb-4">
+          <div className={`grid grid-cols-2 gap-4 ${compactMode ? 'pb-2' : 'pb-4'}`}>
             <div>
-              <p className="text-[8px] font-bold tracking-[0.25em] text-amber-500">BILLED TO</p>
+              <p className="text-[8px] font-bold tracking-[0.25em]" style={{ color: accentColor }}>BILLED TO</p>
               <p className="mt-2 font-semibold text-slate-900">{client?.name || '— Client Name —'}</p>
               <p className="text-[9px] text-slate-500">{client?.address || ''}</p>
               <p className="text-[9px] text-slate-500">{client?.email || ''}</p>
@@ -122,13 +126,13 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
               {form.yourGST && <p className="text-[9px] text-slate-500">Your GST: {form.yourGST}</p>}
             </div>
             <div className="text-right">
-              {form.watermark && <span className="inline-block rounded bg-amber-100 px-2 py-1 text-[8px] font-bold uppercase text-amber-700">{form.watermark}</span>}
+              {form.watermark && <span className="inline-block rounded px-2 py-1 text-[8px] font-bold uppercase" style={{ background: `${accentColor}22`, color: accentColor }}>{form.watermark}</span>}
             </div>
           </div>
 
           <table className="w-full border-collapse text-[9px]">
             <thead>
-              <tr className="bg-slate-800 text-white">
+              <tr className="text-white" style={{ background: headerColor }}>
                 <th className="px-3 py-2 text-left">ITEM DESCRIPTION</th>
                 <th className="px-3 py-2 text-center">QTY</th>
                 <th className="px-3 py-2 text-right">PRICE</th>
@@ -138,11 +142,11 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
             <tbody>{renderRows((idx) => idx % 2 === 0 ? 'bg-slate-50' : '', 'text-slate-700')}</tbody>
           </table>
 
-          <div className="ml-auto mt-5 w-52 rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2 text-[9px] text-slate-600">
+          <div className={`ml-auto w-52 rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2 text-[9px] text-slate-600 ${compactMode ? 'mt-3' : 'mt-5'}`}>
             <div className="flex justify-between"><span>Subtotal:</span><span>{fmt(subtotal)}</span></div>
             {parseFloat(form.discount) > 0 && <div className="flex justify-between"><span>Discount ({form.discount}%):</span><span>-{fmt(discAmt)}</span></div>}
             {parseFloat(form.tax) > 0 && <div className="flex justify-between"><span>Tax:</span><span>+{fmt(taxAmt)}</span></div>}
-            <div className="-mx-3 -mb-3 mt-2 flex justify-between bg-slate-800 px-3 py-2 text-sm font-bold text-white"><span>TOTAL</span><span>{fmt(total)}</span></div>
+            <div className="-mx-3 -mb-3 mt-2 flex justify-between px-3 py-2 text-sm font-bold text-white" style={{ background: headerColor }}><span>TOTAL</span><span>{fmt(total)}</span></div>
           </div>
         </div>
       </div>
@@ -151,7 +155,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden text-[10px] text-slate-800 shadow-inner">
-      <div className="flex items-start justify-between bg-blue-600 px-6 py-5 text-white">
+      <div className="flex items-start justify-between px-6 py-5 text-white" style={{ background: headerColor }}>
         <div>
           <div className="text-xl font-bold">{settings.companyName || 'Invoicefy'}</div>
           <div className="mt-1 text-[9px] text-blue-100 leading-tight">
@@ -169,7 +173,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       <div className="px-6 py-5">
         <div className="grid grid-cols-2 gap-4 pb-5">
           <div>
-            <p className="text-[8px] font-bold tracking-[0.25em] text-blue-600">BILL TO</p>
+            <p className="text-[8px] font-bold tracking-[0.25em]" style={{ color: accentColor }}>BILL TO</p>
             <p className="mt-2 font-semibold text-slate-900">{client?.name || '— Client Name —'}</p>
             <p className="text-[9px] text-slate-500">{client?.address || ''}</p>
             <p className="text-[9px] text-slate-500">{client?.email || ''}</p>
@@ -178,27 +182,27 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
             {form.yourGST && <p className="text-[9px] text-slate-500">Your GST: {form.yourGST}</p>}
           </div>
           <div className="text-right">
-            {form.watermark && <span className="inline-block rounded bg-blue-50 px-2 py-1 text-[8px] font-bold uppercase text-blue-700">{form.watermark}</span>}
+            {form.watermark && <span className="inline-block rounded px-2 py-1 text-[8px] font-bold uppercase" style={{ background: `${accentColor}22`, color: accentColor }}>{form.watermark}</span>}
           </div>
         </div>
 
         <table className="w-full border-collapse text-[9px]">
           <thead>
-            <tr className="bg-blue-600 text-white">
+            <tr className="text-white" style={{ background: headerColor }}>
               <th className="px-3 py-2 text-left">Description</th>
               <th className="px-3 py-2 text-center">Quantity</th>
               <th className="px-3 py-2 text-right">Unit Price</th>
               <th className="px-3 py-2 text-right">Line Total</th>
             </tr>
           </thead>
-          <tbody>{renderRows((idx) => idx % 2 === 0 ? 'border-b border-slate-100' : 'border-b border-slate-100', 'text-blue-700')}</tbody>
+          <tbody>{renderRows(() => showRowDividers ? 'border-b border-slate-100' : '', '')}</tbody>
         </table>
 
-        <div className="ml-auto mt-5 w-52 bg-slate-50 p-3 space-y-2 text-[9px] text-slate-600">
+        <div className={`ml-auto w-52 bg-slate-50 p-3 space-y-2 text-[9px] text-slate-600 ${compactMode ? 'mt-3' : 'mt-5'}`}>
           <div className="flex justify-between"><span>Subtotal:</span><span>{fmt(subtotal)}</span></div>
           {parseFloat(form.discount) > 0 && <div className="flex justify-between"><span>Discount ({form.discount}%):</span><span>-{fmt(discAmt)}</span></div>}
           {parseFloat(form.tax) > 0 && <div className="flex justify-between"><span>Tax:</span><span>+{fmt(taxAmt)}</span></div>}
-          <div className="flex justify-between border-t border-slate-200 pt-2 text-sm font-bold text-blue-700"><span>TOTAL</span><span>{fmt(total)}</span></div>
+          <div className="flex justify-between border-t border-slate-200 pt-2 text-sm font-bold" style={{ color: accentColor }}><span>TOTAL</span><span>{fmt(total)}</span></div>
         </div>
 
         {form.disclaimer && <div className="mt-5 border-t border-slate-100 pt-3 text-[8px] italic text-slate-400">{form.disclaimer}</div>}
