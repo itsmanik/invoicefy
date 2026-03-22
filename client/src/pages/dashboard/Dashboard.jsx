@@ -129,7 +129,7 @@ const Dashboard = () => {
           <p className="text-slate-500 mt-2 text-lg">Here's a quick overview of your business today.</p>
         </div>
         <Link
-          to="/invoices/new"
+          to="/invoices/pro"
           className="mt-6 md:mt-0 bg-blue-600 text-white px-6 py-3 rounded-xl shadow-md hover:bg-blue-700 hover:shadow-lg transition-all transform active:scale-95 inline-flex items-center font-semibold"
         >
           <DocumentTextIcon className="h-5 w-5 mr-2" />
@@ -245,7 +245,7 @@ const Dashboard = () => {
               </p>
               <div className="mt-6">
                 <Link
-                  to="/invoices/new"
+                  to="/invoices/pro"
                   className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                 >
                   <DocumentTextIcon className="h-4 w-4 mr-2" />
