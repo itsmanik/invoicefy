@@ -12,7 +12,8 @@ import toast from 'react-hot-toast';
 
 const DEFAULT_SETTINGS = {
   companyName: '', website: '', companyEmail: '', companyAddress: '', logoPreview: null,
-  templateId: 'classic-blue', tableColor: '#0e4272', primaryColor: '#4285f4',
+  templateId: 'classic', tableColor: '#2563eb', primaryColor: '#1d4ed8',
+  compactMode: false, showRowDividers: true,
   logoX: 0, logoY: 0, marginT: 0, marginB: 0,
   accountHolderName: '', accountNumber: '', ifsc: '', panNumber: '',
   invoicePrefix: 'INV', bgWatermark: false,
@@ -37,6 +38,7 @@ const InvoicePro = () => {
 
   // Form state
   const [form, setForm] = useState({
+    documentType: 'invoice',
     clientId: '', invoiceDate: new Date().toISOString().split('T')[0],
     yourGST: '', clientGST: '',
     items: [{ description: '', hsn: '', quantity: 1, unitPrice: '' }],
@@ -119,11 +121,21 @@ const InvoicePro = () => {
           accountNumber: settings.accountNumber,
           ifsc:          settings.ifsc,
         },
-        template:  settings.templateId,
+        documentType: form.documentType,
+        template: settings.templateId,
         watermark: form.watermark,
+        templateSettings: {
+          companyName: settings.companyName,
+          companyEmail: settings.companyEmail,
+          companyAddress: settings.companyAddress,
+          headerColor: settings.tableColor,
+          accentColor: settings.primaryColor,
+          compactMode: settings.compactMode,
+          showRowDividers: settings.showRowDividers,
+        },
         settings,
       });
-      toast.success('Invoice created!');
+      toast.success(`${form.documentType === 'quotation' ? 'Quotation' : 'Invoice'} created!`);
       navigate('/invoices');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to create invoice');
@@ -150,7 +162,7 @@ const InvoicePro = () => {
               <span className="hidden sm:inline">Back</span>
             </Link>
             <div className="h-5 w-px bg-slate-200" />
-            <h1 className="text-lg font-extrabold text-slate-900">New Invoice</h1>
+            <h1 className="text-lg font-extrabold text-slate-900">New {form.documentType === 'quotation' ? 'Quotation' : 'Invoice'}</h1>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -178,7 +190,7 @@ const InvoicePro = () => {
               className="flex items-center gap-1.5 px-5 py-2 rounded-lg bg-slate-900 text-white text-sm font-bold hover:bg-slate-800 transition-colors disabled:opacity-50 shadow-md"
             >
               <DocumentArrowUpIcon className="h-4 w-4" />
-              {submitting ? 'Saving…' : 'Generate Invoice'}
+              {submitting ? 'Saving…' : `Generate ${form.documentType === 'quotation' ? 'Quotation' : 'Invoice'}`}
             </button>
           </div>
         </div>
@@ -194,8 +206,19 @@ const InvoicePro = () => {
 
               {/* Section: Client & Date */}
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                <h2 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Invoice Details</h2>
+                <h2 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Document Details</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Document Type *</label>
+                    <select
+                      value={form.documentType}
+                      onChange={e => setFormField('documentType', e.target.value)}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+                    >
+                      <option value="invoice">Invoice</option>
+                      <option value="quotation">Quotation</option>
+                    </select>
+                  </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">Client *</label>
                     {clients.length === 0 ? (
@@ -220,7 +243,7 @@ const InvoicePro = () => {
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Invoice Date *</label>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">{form.documentType === 'quotation' ? 'Quotation Date' : 'Invoice Date'} *</label>
                     <input
                       type="date" required
                       value={form.invoiceDate}
@@ -229,9 +252,9 @@ const InvoicePro = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Invoice Number</label>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Document Number</label>
                     <input
-                      disabled value={`${settings.invoicePrefix || 'INV'}-[auto]`}
+                      disabled value={`${form.documentType === 'quotation' ? 'QUO' : (settings.invoicePrefix || 'INV')}-[next serial]`}
                       className="w-full border border-slate-100 rounded-xl px-4 py-3 text-sm bg-slate-100 text-slate-400"
                     />
                   </div>

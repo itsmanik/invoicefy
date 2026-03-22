@@ -2,13 +2,9 @@ import React, { useState, useRef } from 'react';
 import { XMarkIcon, Cog6ToothIcon, BuildingOfficeIcon, SwatchIcon, CreditCardIcon, AdjustmentsHorizontalIcon, UserGroupIcon, PlusIcon, CloudArrowUpIcon } from '@heroicons/react/24/outline';
 
 const PRESET_TEMPLATES = [
-  { id: 'classic-blue',  label: 'Classic Blue',   color: '#0e4272', header: '#0e4272', accent: '#3b82f6' },
-  { id: 'classic-red',   label: 'Classic Red',    color: '#7b1616', header: '#7b1616', accent: '#ef4444' },
-  { id: 'classic-green', label: 'Classic Green',  color: '#0d3d2b', header: '#0d3d2b', accent: '#10b981' },
-  { id: 'royal-purple',  label: 'Royal Purple',   color: '#4c1d95', header: '#4c1d95', accent: '#8b5cf6' },
-  { id: 'slate-gold',    label: 'Slate Gold',     color: '#334155', header: '#334155', accent: '#eab308' },
-  { id: 'midnight',      label: 'Midnight',       color: '#020617', header: '#020617', accent: '#6366f1' },
-  { id: 'minimalist',    label: 'Minimalist',     color: '#111111', header: '#111111', accent: '#64748b' },
+  { id: 'classic', label: 'Classic', description: 'Blue business invoice with GST and totals.', header: '#2563EB', accent: '#1d4ed8' },
+  { id: 'minimal', label: 'Minimal', description: 'Clean monochrome invoice for a simple look.', header: '#111827', accent: '#6B7280' },
+  { id: 'bold', label: 'Bold', description: 'Dark header invoice with high-contrast totals.', header: '#1E293B', accent: '#F59E0B' },
 ];
 
 const TABS = [
@@ -21,15 +17,12 @@ const TABS = [
 
 export default function InvoiceSettingsModal({ open, onClose, settings, onChange, clients, onAddClient }) {
   const [tab, setTab] = useState('company');
-  const [customTheme, setCustomTheme] = useState({ id: 'custom', label: 'My Custom Theme', color: '#4285f4' });
-  const [showCustom, setShowCustom] = useState(false);
   const [newClient, setNewClient] = useState({ name: '', email: '', phone: '', address: '' });
   const logoInputRef = useRef();
 
   if (!open) return null;
 
-  const activeTemplate = settings.templateId || 'classic-blue';
-  const allTemplates = [...PRESET_TEMPLATES, ...(showCustom ? [customTheme] : [])];
+  const activeTemplate = settings.templateId || 'classic';
 
   const handleLogoFile = (e) => {
     const file = e.target.files[0];
@@ -146,85 +139,88 @@ export default function InvoiceSettingsModal({ open, onClose, settings, onChange
           {/* ── TEMPLATES ── */}
           {tab === 'templates' && (
             <div className="space-y-5">
-              <div className="grid grid-cols-3 gap-3">
-                {allTemplates.map(t => (
+              <p className="text-sm text-slate-500">Choose a PDF layout, then fine-tune the colors and spacing that will also be used in the downloaded invoice.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {PRESET_TEMPLATES.map(t => (
                   <button
                     key={t.id}
                     type="button"
-                    onClick={() => onChange({ 
-                      ...settings, 
-                      templateId: t.id, 
-                      templateColor: t.color,
+                    onClick={() => onChange({
+                      ...settings,
+                      templateId: t.id,
                       tableColor: t.header,
-                      primaryColor: t.accent
+                      primaryColor: t.accent,
                     })}
                     className={`rounded-xl border-2 overflow-hidden transition-all text-left ${
-                      activeTemplate === t.id ? 'border-blue-500 shadow-md' : 'border-slate-200 hover:border-slate-300'
+                      activeTemplate === t.id ? 'border-blue-500 shadow-md ring-2 ring-blue-100' : 'border-slate-200 hover:border-slate-300'
                     }`}
                   >
-                    <div className="h-14 w-full" style={{ background: t.color }} />
-                    <p className="text-xs font-semibold text-slate-700 text-center py-2 px-1">{t.label}</p>
+                    <div className="h-16 w-full" style={{ background: `linear-gradient(135deg, ${t.header}, ${t.accent})` }} />
+                    <div className="p-3">
+                      <p className="text-sm font-semibold text-slate-800">{t.label}</p>
+                      <p className="mt-1 text-xs text-slate-500 leading-5">{t.description}</p>
+                    </div>
                   </button>
                 ))}
-                {/* + Custom */}
-                {!showCustom && (
-                  <button
-                    type="button"
-                    onClick={() => { setShowCustom(true); onChange({ ...settings, templateId: 'custom', templateColor: customTheme.color }); }}
-                    className="rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-1 py-3 hover:border-blue-400 text-slate-400 hover:text-blue-500 transition-all"
-                  >
-                    <PlusIcon className="h-5 w-5" />
-                    <span className="text-xs font-medium">Custom</span>
-                  </button>
-                )}
               </div>
 
-              {/* Customize panel */}
-              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                <div className="flex items-center gap-2 mb-4">
-                  <AdjustmentsHorizontalIcon className="h-4 w-4 text-slate-500" />
-                  <span className="text-sm font-semibold text-slate-700">Customize Active Template</span>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">Template customization</h3>
+                  <p className="mt-1 text-xs text-slate-500">These options affect both the live preview and the downloaded PDF.</p>
                 </div>
-                <div className="grid grid-cols-2 gap-4 mb-4">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Table Color</label>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Header color</label>
                     <input
                       type="color"
-                      value={settings.tableColor || '#0e4272'}
+                      value={settings.tableColor || '#2563eb'}
                       onChange={e => onChange({ ...settings, tableColor: e.target.value })}
-                      className="h-10 w-full rounded-lg border border-slate-200 cursor-pointer"
+                      className="h-11 w-full rounded-lg border border-slate-200 bg-white cursor-pointer"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Primary Color</label>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Accent color</label>
                     <input
                       type="color"
-                      value={settings.primaryColor || '#4285f4'}
-                      onChange={e => {
-                        const updated = { ...settings, primaryColor: e.target.value };
-                        if (activeTemplate === 'custom') {
-                          setCustomTheme(p => ({ ...p, color: e.target.value }));
-                          updated.templateColor = e.target.value;
-                        }
-                        onChange(updated);
-                      }}
-                      className="h-10 w-full rounded-lg border border-slate-200 cursor-pointer"
+                      value={settings.primaryColor || '#1d4ed8'}
+                      onChange={e => onChange({ ...settings, primaryColor: e.target.value })}
+                      className="h-11 w-full rounded-lg border border-slate-200 bg-white cursor-pointer"
                     />
                   </div>
                 </div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Layout Adjustments</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {[['logoX','Logo X (mm)'],['logoY','Logo Y (mm)'],['marginT','Margin T (mm)'],['marginB','Margin B (mm)']].map(([key, label]) => (
-                    <div key={key}>
-                      <label className="block text-xs text-slate-500 mb-1">{label}</label>
-                      <input
-                        type="number"
-                        value={settings[key] || 0}
-                        onChange={e => onChange({ ...settings, [key]: e.target.value })}
-                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Spacing</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onChange({ ...settings, compactMode: false })}
+                        className={`rounded-lg border px-3 py-2 text-sm font-medium ${!settings.compactMode ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600'}`}
+                      >
+                        Comfortable
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onChange({ ...settings, compactMode: true })}
+                        className={`rounded-lg border px-3 py-2 text-sm font-medium ${settings.compactMode ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600'}`}
+                      >
+                        Compact
+                      </button>
                     </div>
-                  ))}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Table styling</label>
+                    <button
+                      type="button"
+                      onClick={() => onChange({ ...settings, showRowDividers: settings.showRowDividers === false })}
+                      className={`w-full rounded-lg border px-3 py-2 text-sm font-medium ${settings.showRowDividers !== false ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600'}`}
+                    >
+                      {settings.showRowDividers !== false ? 'Row dividers on' : 'Row dividers off'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
