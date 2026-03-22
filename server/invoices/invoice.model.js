@@ -99,6 +99,12 @@ const Invoice = sequelize.define('Invoice', {
     type: DataTypes.STRING,
     allowNull: true,
     defaultValue: ''
+  },
+
+  templateSettings: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: null
   }
 
 }, {

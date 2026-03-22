@@ -1,17 +1,5 @@
 import React, { useMemo } from 'react';
 
-const TEMPLATE_COLORS = {
-  'classic-blue':   { header: '#0e4272', accent: '#1a6bb5' },
-  'classic-red':    { header: '#7b1616', accent: '#b52a2a' },
-  'classic-green':  { header: '#0d3d2b', accent: '#166f4f' },
-  'modern-sidebar': { header: '#2d3748', accent: '#4a5568' },
-  'royal-purple':   { header: '#4c1d95', accent: '#8b5cf6' },
-  'slate-gold':     { header: '#334155', accent: '#eab308' },
-  'midnight':       { header: '#020617', accent: '#6366f1' },
-  'minimalist':     { header: '#111111', accent: '#64748b' },
-  'custom':         { header: '#4285f4', accent: '#6ba3fb' },
-};
-
 function fmt(n) {
   return '₹' + (parseFloat(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -19,131 +7,206 @@ function fmt(n) {
 export default function InvoiceLivePreview({ form, settings, clients }) {
   const client = useMemo(() => clients.find(c => String(c.id) === String(form.clientId)), [clients, form.clientId]);
 
-  const subtotal   = form.items.reduce((s, i) => s + (parseFloat(i.quantity)||0) * (parseFloat(i.unitPrice)||0), 0);
-  const discAmt    = subtotal * (parseFloat(form.discount)||0) / 100;
-  const taxable    = subtotal - discAmt;
-  const taxAmt     = taxable * (parseFloat(form.tax)||0) / 100;
-  const total      = taxable + taxAmt;
+  const subtotal = form.items.reduce((s, i) => s + (parseFloat(i.quantity) || 0) * (parseFloat(i.unitPrice) || 0), 0);
+  const discAmt = subtotal * (parseFloat(form.discount) || 0) / 100;
+  const taxable = subtotal - discAmt;
+  const taxAmt = taxable * (parseFloat(form.tax) || 0) / 100;
+  const total = taxable + taxAmt;
 
-  const tpl   = settings.templateId || 'classic-blue';
-  const cols  = TEMPLATE_COLORS[tpl] || TEMPLATE_COLORS['classic-blue'];
-  const hdr   = settings.tableColor  || cols.header;
-  const acc   = settings.primaryColor || cols.accent;
-
+  const template = settings.templateId || 'classic';
   const invoiceNumber = `${settings.invoicePrefix || 'INV'}-001`;
+  const visibleItems = form.items.filter(i => i.description);
+  const headerColor = settings.tableColor || (template === 'minimal' ? '#111827' : template === 'bold' ? '#1E293B' : '#2563EB');
+  const accentColor = settings.primaryColor || (template === 'minimal' ? '#6B7280' : template === 'bold' ? '#F59E0B' : '#1d4ed8');
+  const compactMode = Boolean(settings.compactMode);
+  const showRowDividers = settings.showRowDividers !== false;
+
+  const renderRows = (rowClass = '', amountClass = '') => visibleItems.length ? visibleItems.map((item, idx) => (
+    <tr key={idx} className={rowClass ? rowClass(idx) : ''} style={showRowDividers ? undefined : { borderBottom: 'none' }}>
+      <td className="px-3 py-2 text-slate-700">
+        {item.description}
+        {item.hsn ? <span className="text-slate-400"> (HSN: {item.hsn})</span> : null}
+      </td>
+      <td className="px-3 py-2 text-center text-slate-700">{item.quantity || 0}</td>
+      <td className="px-3 py-2 text-right text-slate-700">{fmt(item.unitPrice)}</td>
+      <td className={`px-3 py-2 text-right font-semibold ${amountClass}`}>
+        {fmt((parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0))}
+      </td>
+    </tr>
+  )) : (
+    <tr><td colSpan={4} className="px-3 py-6 text-center text-slate-400 italic">No items added yet…</td></tr>
+  );
+
+  if (template === 'minimal') {
+    return (
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden text-[10px] text-slate-800 shadow-inner">
+        <div className="px-6 py-5">
+          <div className="flex items-start justify-between border-b-2 border-slate-900 pb-4">
+            <div>
+              <div className="text-lg font-bold text-slate-900">{settings.companyName || 'Invoicefy'}</div>
+              <div className="mt-1 text-[9px] text-slate-500 leading-tight">
+                {settings.companyAddress && <div>{settings.companyAddress}</div>}
+                {settings.companyEmail && <div>{settings.companyEmail}</div>}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-base tracking-[0.3em] text-slate-500">INVOICE</div>
+              <div className="mt-2 text-[9px] text-slate-500">Invoice No: {invoiceNumber}</div>
+              <div className="text-[9px] text-slate-500">Date: {form.invoiceDate || '—'}</div>
+            </div>
+          </div>
+
+          <div className={`grid grid-cols-2 gap-4 ${compactMode ? 'py-3' : 'py-5'}`}>
+            <div>
+              <p className="text-[8px] font-bold tracking-[0.25em]" style={{ color: accentColor }}>BILL TO</p>
+              <p className="mt-2 font-semibold text-slate-900">{client?.name || '— Client Name —'}</p>
+              <p className="text-[9px] text-slate-500 leading-tight">{client?.address || ''}</p>
+              <p className="text-[9px] text-slate-500">{client?.email || ''}</p>
+              <p className="text-[9px] text-slate-500">{client?.phone || ''}</p>
+            </div>
+            <div className="text-right text-[9px] text-slate-500">
+              {form.clientGST && <p>Client GST: {form.clientGST}</p>}
+              {form.yourGST && <p>Your GST: {form.yourGST}</p>}
+              {form.watermark && <p className="mt-2 font-semibold text-slate-700">{form.watermark}</p>}
+            </div>
+          </div>
+
+          <table className="w-full border-collapse text-[9px]">
+            <thead>
+              <tr className="bg-slate-50 text-slate-500 border border-slate-200">
+                <th className="px-3 py-2 text-left">DESCRIPTION</th>
+                <th className="px-3 py-2 text-center">QTY</th>
+                <th className="px-3 py-2 text-right">RATE</th>
+                <th className="px-3 py-2 text-right">AMOUNT</th>
+              </tr>
+            </thead>
+            <tbody>{renderRows(() => 'border-b border-slate-200', 'text-slate-900')}</tbody>
+          </table>
+
+          <div className={`ml-auto w-48 space-y-2 text-[9px] text-slate-600 ${compactMode ? 'mt-3' : 'mt-5'}`}>
+            <div className="flex justify-between"><span>Subtotal:</span><span>{fmt(subtotal)}</span></div>
+            {parseFloat(form.discount) > 0 && <div className="flex justify-between"><span>Discount ({form.discount}%):</span><span>-{fmt(discAmt)}</span></div>}
+            {parseFloat(form.tax) > 0 && <div className="flex justify-between"><span>Tax:</span><span>+{fmt(taxAmt)}</span></div>}
+            <div className="flex justify-between border-t-2 pt-2 text-sm font-bold" style={{ borderColor: headerColor, color: headerColor }}><span>TOTAL</span><span>{fmt(total)}</span></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (template === 'bold') {
+    return (
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden text-[10px] text-slate-800 shadow-inner">
+        <div className="px-6 py-5 text-white" style={{ background: headerColor }}>
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-xl font-bold">{settings.companyName || 'Invoicefy'}</div>
+              <div className="mt-1 text-[9px] text-slate-300 leading-tight">
+                {settings.companyAddress && <div>{settings.companyAddress}</div>}
+                {settings.companyEmail && <div>{settings.companyEmail}</div>}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-black tracking-[0.2em]" style={{ color: accentColor }}>INVOICE</div>
+              <div className="mt-2 text-[9px] text-slate-300">No: {invoiceNumber}</div>
+              <div className="text-[9px] text-slate-300">Date: {form.invoiceDate || '—'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 py-5">
+          <div className={`grid grid-cols-2 gap-4 ${compactMode ? 'pb-2' : 'pb-4'}`}>
+            <div>
+              <p className="text-[8px] font-bold tracking-[0.25em]" style={{ color: accentColor }}>BILLED TO</p>
+              <p className="mt-2 font-semibold text-slate-900">{client?.name || '— Client Name —'}</p>
+              <p className="text-[9px] text-slate-500">{client?.address || ''}</p>
+              <p className="text-[9px] text-slate-500">{client?.email || ''}</p>
+              <p className="text-[9px] text-slate-500">{client?.phone || ''}</p>
+              {form.clientGST && <p className="text-[9px] text-slate-500">Client GST: {form.clientGST}</p>}
+              {form.yourGST && <p className="text-[9px] text-slate-500">Your GST: {form.yourGST}</p>}
+            </div>
+            <div className="text-right">
+              {form.watermark && <span className="inline-block rounded px-2 py-1 text-[8px] font-bold uppercase" style={{ background: `${accentColor}22`, color: accentColor }}>{form.watermark}</span>}
+            </div>
+          </div>
+
+          <table className="w-full border-collapse text-[9px]">
+            <thead>
+              <tr className="text-white" style={{ background: headerColor }}>
+                <th className="px-3 py-2 text-left">ITEM DESCRIPTION</th>
+                <th className="px-3 py-2 text-center">QTY</th>
+                <th className="px-3 py-2 text-right">PRICE</th>
+                <th className="px-3 py-2 text-right">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>{renderRows((idx) => idx % 2 === 0 ? 'bg-slate-50' : '', 'text-slate-700')}</tbody>
+          </table>
+
+          <div className={`ml-auto w-52 rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2 text-[9px] text-slate-600 ${compactMode ? 'mt-3' : 'mt-5'}`}>
+            <div className="flex justify-between"><span>Subtotal:</span><span>{fmt(subtotal)}</span></div>
+            {parseFloat(form.discount) > 0 && <div className="flex justify-between"><span>Discount ({form.discount}%):</span><span>-{fmt(discAmt)}</span></div>}
+            {parseFloat(form.tax) > 0 && <div className="flex justify-between"><span>Tax:</span><span>+{fmt(taxAmt)}</span></div>}
+            <div className="-mx-3 -mb-3 mt-2 flex justify-between px-3 py-2 text-sm font-bold text-white" style={{ background: headerColor }}><span>TOTAL</span><span>{fmt(total)}</span></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white rounded-xl shadow-inner border border-slate-200 overflow-hidden text-[10px] text-slate-800 select-none" style={{ fontFamily: 'Arial, sans-serif', minHeight: 520 }}>
-
-      {/* Header band */}
-      <div className="flex items-start justify-between px-5 py-4" style={{ background: hdr, color: '#fff' }}>
+    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden text-[10px] text-slate-800 shadow-inner">
+      <div className="flex items-start justify-between px-6 py-5 text-white" style={{ background: headerColor }}>
         <div>
-          {settings.logoPreview
-            ? <img src={settings.logoPreview} alt="logo" className="h-8 object-contain mb-1" />
-            : <div className="text-base font-extrabold tracking-wide">{settings.companyName || 'Your Company'}</div>
-          }
-          <div className="opacity-80 leading-tight mt-1 text-[9px]">
+          <div className="text-xl font-bold">{settings.companyName || 'Invoicefy'}</div>
+          <div className="mt-1 text-[9px] text-blue-100 leading-tight">
             {settings.companyAddress && <div>{settings.companyAddress}</div>}
-            {settings.companyEmail   && <div>{settings.companyEmail}</div>}
-            {settings.website        && <div>{settings.website}</div>}
+            {settings.companyEmail && <div>{settings.companyEmail}</div>}
           </div>
         </div>
         <div className="text-right">
-          <div className="text-xl font-black tracking-widest opacity-90">INVOICE</div>
-          <div className="text-[9px] opacity-70 mt-1"># {invoiceNumber}</div>
-          <div className="text-[9px] opacity-70">Date: {form.invoiceDate || '—'}</div>
+          <div className="text-2xl font-black">INVOICE</div>
+          <div className="mt-2 text-[9px] text-blue-100">Invoice Number: {invoiceNumber}</div>
+          <div className="text-[9px] text-blue-100">Date: {form.invoiceDate || '—'}</div>
         </div>
       </div>
 
-      {/* Bill to */}
-      <div className="px-5 py-3 grid grid-cols-2 gap-4">
-        <div>
-          <p className="text-[8px] font-bold uppercase tracking-widest mb-1" style={{ color: acc }}>Bill To</p>
-          <p className="font-bold text-slate-800">{client?.name || '— Client Name —'}</p>
-          <p className="text-slate-500 text-[9px] leading-tight">{client?.email || ''}</p>
-          <p className="text-slate-500 text-[9px] leading-tight">{client?.address || ''}</p>
-          {form.clientGST && <p className="text-[9px] text-slate-500">GST: {form.clientGST}</p>}
+      <div className="px-6 py-5">
+        <div className="grid grid-cols-2 gap-4 pb-5">
+          <div>
+            <p className="text-[8px] font-bold tracking-[0.25em]" style={{ color: accentColor }}>BILL TO</p>
+            <p className="mt-2 font-semibold text-slate-900">{client?.name || '— Client Name —'}</p>
+            <p className="text-[9px] text-slate-500">{client?.address || ''}</p>
+            <p className="text-[9px] text-slate-500">{client?.email || ''}</p>
+            <p className="text-[9px] text-slate-500">{client?.phone || ''}</p>
+            {form.clientGST && <p className="text-[9px] text-slate-500">Client GST: {form.clientGST}</p>}
+            {form.yourGST && <p className="text-[9px] text-slate-500">Your GST: {form.yourGST}</p>}
+          </div>
+          <div className="text-right">
+            {form.watermark && <span className="inline-block rounded px-2 py-1 text-[8px] font-bold uppercase" style={{ background: `${accentColor}22`, color: accentColor }}>{form.watermark}</span>}
+          </div>
         </div>
-        <div className="text-right">
-          {form.yourGST && <p className="text-[9px] text-slate-500">Your GST: {form.yourGST}</p>}
-          {form.watermark && (
-            <span className="inline-block text-[8px] font-bold px-2 py-0.5 rounded" style={{ background: acc + '22', color: acc }}>
-              {form.watermark}
-            </span>
-          )}
-        </div>
-      </div>
 
-      {/* Items table */}
-      <div className="px-5 pb-2">
-        <table className="w-full text-[9px] border-collapse">
+        <table className="w-full border-collapse text-[9px]">
           <thead>
-            <tr style={{ background: hdr, color: '#fff' }}>
-              <th className="text-left px-2 py-1.5 font-semibold">Description</th>
-              {form.items.some(i => i.hsn) && <th className="px-2 py-1.5 font-semibold">HSN</th>}
-              <th className="px-2 py-1.5 font-semibold text-center">Qty</th>
-              <th className="px-2 py-1.5 font-semibold text-right">Rate</th>
-              <th className="px-2 py-1.5 font-semibold text-right">Amount</th>
+            <tr className="text-white" style={{ background: headerColor }}>
+              <th className="px-3 py-2 text-left">Description</th>
+              <th className="px-3 py-2 text-center">Quantity</th>
+              <th className="px-3 py-2 text-right">Unit Price</th>
+              <th className="px-3 py-2 text-right">Line Total</th>
             </tr>
           </thead>
-          <tbody>
-            {form.items.filter(i => i.description).map((item, idx) => (
-              <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                <td className="px-2 py-1.5 text-slate-700">{item.description || '—'}</td>
-                {form.items.some(i => i.hsn) && <td className="px-2 py-1.5 text-slate-500 text-center">{item.hsn || ''}</td>}
-                <td className="px-2 py-1.5 text-center text-slate-700">{item.quantity || 0}</td>
-                <td className="px-2 py-1.5 text-right text-slate-700">{fmt(item.unitPrice)}</td>
-                <td className="px-2 py-1.5 text-right font-semibold" style={{ color: hdr }}>
-                  {fmt((parseFloat(item.quantity)||0) * (parseFloat(item.unitPrice)||0))}
-                </td>
-              </tr>
-            ))}
-            {form.items.filter(i => i.description).length === 0 && (
-              <tr><td colSpan={5} className="px-2 py-3 text-center text-slate-400 italic">No items added yet…</td></tr>
-            )}
-          </tbody>
+          <tbody>{renderRows(() => showRowDividers ? 'border-b border-slate-100' : '', '')}</tbody>
         </table>
+
+        <div className={`ml-auto w-52 bg-slate-50 p-3 space-y-2 text-[9px] text-slate-600 ${compactMode ? 'mt-3' : 'mt-5'}`}>
+          <div className="flex justify-between"><span>Subtotal:</span><span>{fmt(subtotal)}</span></div>
+          {parseFloat(form.discount) > 0 && <div className="flex justify-between"><span>Discount ({form.discount}%):</span><span>-{fmt(discAmt)}</span></div>}
+          {parseFloat(form.tax) > 0 && <div className="flex justify-between"><span>Tax:</span><span>+{fmt(taxAmt)}</span></div>}
+          <div className="flex justify-between border-t border-slate-200 pt-2 text-sm font-bold" style={{ color: accentColor }}><span>TOTAL</span><span>{fmt(total)}</span></div>
+        </div>
+
+        {form.disclaimer && <div className="mt-5 border-t border-slate-100 pt-3 text-[8px] italic text-slate-400">{form.disclaimer}</div>}
       </div>
-
-      {/* Totals */}
-      <div className="px-5 pb-3">
-        <div className="ml-auto w-44 space-y-1 text-[9px]">
-          <div className="flex justify-between text-slate-600">
-            <span>Subtotal</span><span>{fmt(subtotal)}</span>
-          </div>
-          {parseFloat(form.discount) > 0 && (
-            <div className="flex justify-between text-emerald-600">
-              <span>Discount ({form.discount}%)</span><span>-{fmt(discAmt)}</span>
-            </div>
-          )}
-          {parseFloat(form.tax) > 0 && (
-            <div className="flex justify-between text-blue-600">
-              <span>GST ({form.tax}%)</span><span>+{fmt(taxAmt)}</span>
-            </div>
-          )}
-          <div className="flex justify-between font-extrabold text-[12px] pt-1 mt-1 border-t-2" style={{ color: acc, borderColor: acc }}>
-            <span>TOTAL</span><span>{fmt(total)}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Bank details */}
-      {(settings.accountHolderName || settings.accountNumber || settings.ifsc) && (
-        <div className="mx-5 mb-3 rounded-lg p-3" style={{ background: hdr + '14', borderLeft: `3px solid ${acc}` }}>
-          <p className="text-[8px] font-bold uppercase tracking-widest mb-1" style={{ color: acc }}>Payment Details</p>
-          {settings.accountHolderName && <p className="text-[9px]">Account: {settings.accountHolderName}</p>}
-          {settings.accountNumber     && <p className="text-[9px]">Number: {settings.accountNumber}</p>}
-          {settings.ifsc              && <p className="text-[9px]">IFSC: {settings.ifsc}</p>}
-          {settings.panNumber         && <p className="text-[9px]">PAN: {settings.panNumber}</p>}
-        </div>
-      )}
-
-      {/* Disclaimer */}
-      {form.disclaimer && (
-        <div className="px-5 pb-3 text-[8px] text-slate-400 italic leading-tight border-t border-slate-100 pt-2">
-          {form.disclaimer}
-        </div>
-      )}
     </div>
   );
 }
