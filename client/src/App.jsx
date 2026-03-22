@@ -10,7 +10,6 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Clients from './pages/clients/Clients';
 import InvoicesList from './pages/invoices/InvoicesList';
-import NewInvoice from './pages/invoices/NewInvoice';
 import InvoicePro from './pages/invoices/InvoicePro';
 
 // Layout Component
@@ -128,7 +127,7 @@ function App() {
                         element={
                             <PrivateRoute>
                                 <Layout>
-                                    <NewInvoice />
+                                    <Navigate to="/invoices/pro" replace />
                                 </Layout>
                             </PrivateRoute>
                         }

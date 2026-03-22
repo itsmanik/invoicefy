@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 
 const DEFAULT_SETTINGS = {
   companyName: '', website: '', companyEmail: '', companyAddress: '', logoPreview: null,
-  templateId: 'classic-blue', tableColor: '#0e4272', primaryColor: '#4285f4',
+  templateId: 'classic', tableColor: '#2563eb', primaryColor: '#1d4ed8',
   logoX: 0, logoY: 0, marginT: 0, marginB: 0,
   accountHolderName: '', accountNumber: '', ifsc: '', panNumber: '',
   invoicePrefix: 'INV', bgWatermark: false,
@@ -119,7 +119,7 @@ const InvoicePro = () => {
           accountNumber: settings.accountNumber,
           ifsc:          settings.ifsc,
         },
-        template:  settings.templateId,
+        template: settings.templateId,
         watermark: form.watermark,
         settings,
       });
