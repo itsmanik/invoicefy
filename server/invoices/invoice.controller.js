@@ -5,9 +5,46 @@ const Client  = require('../clients/client.model');
 const { generatePDF } = require('../pdf-service/pdf.generator');
 
 const VALID_TEMPLATES = ['classic', 'minimal', 'bold'];
+const VALID_DOCUMENT_TYPES = ['invoice', 'quotation'];
 
-const generateInvoiceNumber = () =>
-  `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+const getNextDocumentNumber = async (businessId, documentType) => {
+  const invoices = await Invoice.findAll({
+    where: { businessId },
+    attributes: ['invoiceNumber'],
+  });
+
+  const maxSerial = invoices.reduce((max, invoice) => {
+    const match = String(invoice.invoiceNumber || '').match(/(\d+)$/);
+    if (!match) return max;
+    const serial = Number(match[1]);
+    return Number.isFinite(serial) ? Math.max(max, serial) : max;
+  }, 0);
+
+  const nextSerial = maxSerial + 1;
+  const prefix = documentType === 'quotation' ? 'QUO' : 'INV';
+  return `${prefix}-${String(nextSerial).padStart(4, '0')}`;
+};
+
+const sanitizeTemplateSettings = (template, settings = {}) => {
+  const value = settings && typeof settings === 'object' ? settings : {};
+  const defaults = {
+    classic: { headerColor: '#2563EB', accentColor: '#1d4ed8' },
+    minimal: { headerColor: '#111827', accentColor: '#6B7280' },
+    bold: { headerColor: '#1E293B', accentColor: '#F59E0B' }
+  };
+
+  const fallback = defaults[template] || defaults.classic;
+
+  return {
+    companyName: String(value.companyName || 'Invoicefy').trim().slice(0, 80),
+    companyEmail: String(value.companyEmail || '').trim().slice(0, 120),
+    companyAddress: String(value.companyAddress || '').trim().slice(0, 240),
+    headerColor: /^#[0-9A-Fa-f]{6}$/.test(value.headerColor || '') ? value.headerColor : fallback.headerColor,
+    accentColor: /^#[0-9A-Fa-f]{6}$/.test(value.accentColor || '') ? value.accentColor : fallback.accentColor,
+    compactMode: Boolean(value.compactMode),
+    showRowDividers: value.showRowDividers !== false,
+  };
+};
 
 
 const sanitizeTemplateSettings = (template, settings = {}) => {
@@ -63,6 +100,7 @@ exports.createInvoice = async (req, res) => {
       discount = 0,
       template = 'classic',
       watermark = '',
+      documentType = 'invoice',
 
       // ✅ NEW FIELDS
       invoiceDate,
@@ -83,6 +121,7 @@ exports.createInvoice = async (req, res) => {
     }
 
     const safeTemplate = VALID_TEMPLATES.includes(template) ? template : 'classic';
+    const safeDocumentType = VALID_DOCUMENT_TYPES.includes(documentType) ? documentType : 'invoice';
     const safeTemplateSettings = sanitizeTemplateSettings(safeTemplate, templateSettings);
 
     const client = await Client.findOne({ where: { id: clientId, businessId } });
@@ -100,11 +139,12 @@ exports.createInvoice = async (req, res) => {
     }));
 
     const totals = calculateTotals(updatedItems, tax, discount);
+    const documentNumber = await getNextDocumentNumber(businessId, safeDocumentType);
 
     const invoice = await Invoice.create({
       businessId,
       clientId,
-      invoiceNumber: generateInvoiceNumber(),
+      invoiceNumber: documentNumber,
 
       // ✅ Added Fields (No structure change)
       invoiceDate: invoiceDate || new Date().toISOString().slice(0, 10),
@@ -123,6 +163,7 @@ exports.createInvoice = async (req, res) => {
       total: totals.total,
 
       status: 'Unpaid',
+      documentType: safeDocumentType,
       template: safeTemplate,
       watermark: watermark.trim(),
       templateSettings: safeTemplateSettings

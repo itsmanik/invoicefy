@@ -74,6 +74,12 @@ const Invoice = sequelize.define('Invoice', {
     defaultValue: 'Unpaid'
   },
 
+  documentType: {
+    type: DataTypes.ENUM('invoice', 'quotation'),
+    allowNull: false,
+    defaultValue: 'invoice'
+  },
+
   // ✅ NEW: Bank Details (JSON format)
   bankDetails: {
     type: DataTypes.JSON,

@@ -14,7 +14,9 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
   const total = taxable + taxAmt;
 
   const template = settings.templateId || 'classic';
-  const invoiceNumber = `${settings.invoicePrefix || 'INV'}-001`;
+  const documentType = form.documentType || 'invoice';
+  const documentLabel = documentType === 'quotation' ? 'QUOTATION' : 'INVOICE';
+  const invoiceNumber = `${documentType === 'quotation' ? 'QUO' : (settings.invoicePrefix || 'INV')}-0001`;
   const visibleItems = form.items.filter(i => i.description);
   const headerColor = settings.tableColor || (template === 'minimal' ? '#111827' : template === 'bold' ? '#1E293B' : '#2563EB');
   const accentColor = settings.primaryColor || (template === 'minimal' ? '#6B7280' : template === 'bold' ? '#F59E0B' : '#1d4ed8');
@@ -50,7 +52,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-base tracking-[0.3em] text-slate-500">INVOICE</div>
+              <div className="text-base tracking-[0.3em] text-slate-500">{documentLabel}</div>
               <div className="mt-2 text-[9px] text-slate-500">Invoice No: {invoiceNumber}</div>
               <div className="text-[9px] text-slate-500">Date: {form.invoiceDate || '—'}</div>
             </div>
@@ -107,7 +109,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-black tracking-[0.2em]" style={{ color: accentColor }}>INVOICE</div>
+              <div className="text-2xl font-black tracking-[0.2em]" style={{ color: accentColor }}>{documentLabel}</div>
               <div className="mt-2 text-[9px] text-slate-300">No: {invoiceNumber}</div>
               <div className="text-[9px] text-slate-300">Date: {form.invoiceDate || '—'}</div>
             </div>
@@ -164,7 +166,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
           </div>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-black">INVOICE</div>
+          <div className="text-2xl font-black">{documentLabel}</div>
           <div className="mt-2 text-[9px] text-blue-100">Invoice Number: {invoiceNumber}</div>
           <div className="text-[9px] text-blue-100">Date: {form.invoiceDate || '—'}</div>
         </div>

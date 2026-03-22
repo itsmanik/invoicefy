@@ -70,15 +70,15 @@ const InvoicesList = () => {
         <div className="space-y-8 animate-fade-in-up">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
                 <div>
-                    <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Invoices</h1>
-                    <p className="text-slate-500 mt-1">Track and manage your billing</p>
+                    <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Invoices & Quotations</h1>
+                    <p className="text-slate-500 mt-1">Track invoices and quotations in one place</p>
                 </div>
                 <Link
                     to="/invoices/pro"
                     className="mt-4 md:mt-0 inline-flex items-center px-6 py-3 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-all hover:shadow-lg active:scale-95"
                 >
                     <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
-                    Create Invoice
+                    Create Document
                 </Link>
             </div>
 
@@ -88,7 +88,8 @@ const InvoicesList = () => {
                         <table className="min-w-full divide-y divide-slate-100">
                             <thead className="bg-slate-50/50">
                                 <tr>
-                                    <th className="px-8 py-5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Invoice #</th>
+                                    <th className="px-8 py-5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Number</th>
+                                    <th className="px-8 py-5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Type</th>
                                     <th className="px-8 py-5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Client</th>
                                     <th className="px-8 py-5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
                                     <th className="px-8 py-5 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
@@ -101,6 +102,11 @@ const InvoicesList = () => {
                                     <tr key={invoice.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-8 py-5 whitespace-nowrap text-sm font-bold text-blue-600">
                                             {invoice.invoiceNumber}
+                                        </td>
+                                        <td className="px-8 py-5 whitespace-nowrap">
+                                            <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${invoice.documentType === 'quotation' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                {invoice.documentType === 'quotation' ? 'Quotation' : 'Invoice'}
+                                            </span>
                                         </td>
                                         <td className="px-8 py-5 whitespace-nowrap text-sm font-medium text-slate-900">
                                             {invoice.client?.name || `Client #${invoice.clientId}`}
@@ -141,8 +147,8 @@ const InvoicesList = () => {
                 ) : (
                     <div className="text-center py-20 px-4">
                         <DocumentTextIcon className="mx-auto h-16 w-16 text-slate-300" />
-                        <h3 className="mt-4 text-lg font-bold text-slate-900">No invoices</h3>
-                        <p className="mt-2 text-sm text-slate-500 max-w-sm mx-auto">Get started by generating your first beautiful invoice.</p>
+                        <h3 className="mt-4 text-lg font-bold text-slate-900">No documents yet</h3>
+                        <p className="mt-2 text-sm text-slate-500 max-w-sm mx-auto">Create your first invoice or quotation to get started.</p>
                     </div>
                 )}
             </div>

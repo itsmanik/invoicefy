@@ -41,6 +41,8 @@ const drawWatermark = (doc, text) => {
   }
 };
 
+const getDocumentLabel = (invoice) => invoice.documentType === 'quotation' ? 'QUOTATION' : 'INVOICE';
+
 const drawCompanyBlock = (doc, settings, x, y, color = '#111827') => {
   doc.fillColor(color).fontSize(20).font('Helvetica-Bold').text(settings.companyName || 'Invoicefy', x, y);
   let nextY = y + 24;
@@ -62,7 +64,8 @@ const renderClassic = (doc, invoice, client, settings) => {
   const borderColor = '#E5E7EB';
   const rowHeight = settings.compactMode ? 24 : 30;
 
-  doc.fillColor(primaryColor).fontSize(28).text('INVOICE', 50, 50, { align: 'right' });
+  const documentLabel = getDocumentLabel(invoice);
+  doc.fillColor(primaryColor).fontSize(28).text(documentLabel, 50, 50, { align: 'right' });
   doc.fillColor(secondaryColor).fontSize(10)
      .text(`Invoice Number: ${invoice.invoiceNumber}`, { align: 'right' })
      .text(`Date: ${new Date(invoice.invoiceDate || invoice.createdAt).toLocaleDateString()}`, { align: 'right' })
@@ -143,7 +146,8 @@ const renderMinimal = (doc, invoice, client, settings) => {
   const rowHeight = settings.compactMode ? 16 : 20;
 
   drawCompanyBlock(doc, settings, 50, 50, black);
-  doc.fillColor(gray).fontSize(11).font('Helvetica').text('INVOICE', 50, 52, { align: 'right' });
+  const documentLabel = getDocumentLabel(invoice);
+  doc.fillColor(gray).fontSize(11).font('Helvetica').text(documentLabel, 50, 52, { align: 'right' });
   doc.strokeColor(black).lineWidth(2).moveTo(50, 85).lineTo(545, 85).stroke();
 
   doc.fillColor(gray).fontSize(9)
@@ -221,7 +225,8 @@ const renderBold = (doc, invoice, client, settings) => {
   doc.rect(0, 0, 595, 110).fill(navy);
   doc.fillColor(white).fontSize(26).font('Helvetica-Bold').text(settings.companyName || 'Invoicefy', 50, 30);
   if (settings.companyEmail) doc.fontSize(10).font('Helvetica').fillColor('#CBD5E1').text(settings.companyEmail, 50, 60);
-  doc.fillColor(accent).fontSize(36).font('Helvetica-Bold').text('INVOICE', 50, 25, { align: 'right' });
+  const documentLabel = getDocumentLabel(invoice);
+  doc.fillColor(accent).fontSize(36).font('Helvetica-Bold').text(documentLabel, 50, 25, { align: 'right' });
   doc.fillColor('#94A3B8').fontSize(9).font('Helvetica')
      .text(`No: ${invoice.invoiceNumber}`, 50, 70)
      .text(`Date: ${new Date(invoice.invoiceDate || invoice.createdAt).toLocaleDateString()}`, 200, 70)
