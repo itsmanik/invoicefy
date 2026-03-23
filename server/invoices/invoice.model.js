@@ -124,3 +124,8 @@ const Invoice = sequelize.define('Invoice', {
 });
 
 module.exports = Invoice;
+const Client = require('../clients/client.model');
+
+Invoice.belongsTo(Client, {
+  foreignKey: 'clientId'
+});
