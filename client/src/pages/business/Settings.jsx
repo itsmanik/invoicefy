@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { getAssetUrl } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { CameraIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
@@ -75,7 +76,7 @@ const Settings = () => {
             <div className="relative">
               {business?.logoUrl ? (
                 <img
-                  src={business.logoUrl}
+                  src={getAssetUrl(business.logoUrl)}
                   alt="Business logo"
                   className="h-32 w-32 object-cover rounded-2xl shadow-md border-4 border-white transition-transform group-hover:scale-105"
                 />

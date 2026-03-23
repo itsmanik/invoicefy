@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { invoicesAPI, clientsAPI } from '../../services/api';
+import { invoicesAPI, clientsAPI, getAssetUrl } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import InvoiceSettingsModal from '../../components/InvoiceSettingsModal';
 import InvoiceLivePreview from '../../components/InvoiceLivePreview';
@@ -66,7 +66,7 @@ const InvoicePro = () => {
         companyName:    prev.companyName    || biz.name    || '',
         companyEmail:   prev.companyEmail   || biz.email   || '',
         companyAddress: prev.companyAddress || biz.address || '',
-        logoPreview:    prev.logoPreview    || biz.logoUrl || null,
+        logoPreview:    prev.logoPreview    || getAssetUrl(biz.logoUrl) || null,
       }));
       if (biz.gstNumber) setForm(f => ({ ...f, yourGST: biz.gstNumber }));
     } catch {
