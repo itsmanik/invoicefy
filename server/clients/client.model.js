@@ -38,3 +38,8 @@ const Client = sequelize.define('Client', {
 });
 
 module.exports = Client;
+const Invoice = require('../invoices/invoice.model');
+
+Client.hasMany(Invoice, {
+  foreignKey: 'clientId'
+});
