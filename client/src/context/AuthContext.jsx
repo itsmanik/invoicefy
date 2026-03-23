@@ -103,13 +103,13 @@ export const AuthProvider = ({ children }) => {
   const updateBusiness = async (businessData) => {
     try {
       const response = await businessAPI.updateProfile(businessData);
-      const updatedBusiness = normalizeBusiness(response.data.business || response.data);
+      const updatedBusiness = response.data.business || response.data;
       setBusiness(updatedBusiness);
       localStorage.setItem('business', JSON.stringify(updatedBusiness));
       toast.success('Business updated successfully');
       return { success: true };
     } catch (error) {
-      toast.error('Failed to update business');
+      toast.error(error.response?.data?.message || 'Failed to update business');
       return { success: false };
     }
   };
@@ -117,7 +117,7 @@ export const AuthProvider = ({ children }) => {
   const uploadLogo = async (formData) => {
     try {
       const response = await businessAPI.uploadLogo(formData);
-      const updatedBusiness = normalizeBusiness({ ...business, logoUrl: response.data.logoUrl });
+      const updatedBusiness = { ...business, logoUrl: response.data.logoUrl };
       setBusiness(updatedBusiness);
       localStorage.setItem('business', JSON.stringify(updatedBusiness));
       toast.success('Logo uploaded successfully');
