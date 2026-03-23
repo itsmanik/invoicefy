@@ -44,22 +44,40 @@ const resolveLogoPath = (logoUrl = '') => {
   return filePath;
 };
 
-const drawLogo = (doc, settings, x, y, options = {}) => {
+const getLogoSource = async (settings, assetBaseUrl = '') => {
   const filePath = resolveLogoPath(settings.logoUrl);
-  if (!filePath) return 0;
+  if (filePath) return filePath;
+
+  if (!assetBaseUrl || !/^\/uploads\/[A-Za-z0-9._-]+$/.test(settings.logoUrl || '')) return null;
+
+  try {
+    const response = await fetch(new URL(settings.logoUrl, assetBaseUrl).toString());
+    if (!response.ok) return null;
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!/^image\/(png|jpe?g)$/i.test(contentType)) return null;
+
+    return Buffer.from(await response.arrayBuffer());
+  } catch (error) {
+    return null;
+  }
+};
+
+const drawLogo = (doc, logoSource, x, y, options = {}) => {
+  if (!logoSource) return 0;
 
   const fit = options.fit || [56, 56];
 
   try {
-    doc.image(filePath, x, y, { fit, align: 'left', valign: 'center' });
+    doc.image(logoSource, x, y, { fit, align: 'left', valign: 'center' });
     return fit[0] + (options.gap || 12);
   } catch (error) {
     return 0;
   }
 };
 
-const drawCompanyBlock = (doc, settings, x, y, color = '#111827') => {
-  const logoOffset = drawLogo(doc, settings, x, y - 4);
+const drawCompanyBlock = (doc, settings, logoSource, x, y, color = '#111827') => {
+  const logoOffset = drawLogo(doc, logoSource, x, y - 4);
   const textX = x + logoOffset;
 
   doc.fillColor(color).fontSize(20).font('Helvetica-Bold').text(settings.companyName || 'Invoicefy', textX, y);
@@ -74,7 +92,7 @@ const drawCompanyBlock = (doc, settings, x, y, color = '#111827') => {
   }
 };
 
-const renderClassic = (doc, invoice, client, settings, watermark) => {
+const renderClassic = (doc, invoice, client, settings, watermark, logoSource) => {
   const primaryColor = settings.headerColor;
   const accentColor = settings.accentColor;
   const secondaryColor = '#4B5563';
@@ -88,7 +106,7 @@ const renderClassic = (doc, invoice, client, settings, watermark) => {
   doc.rect(0, 0, 595, 110).fill(primaryColor);
   
   // Left side: Company Block
-  const logoOffset = drawLogo(doc, settings, 50, 26);
+  const logoOffset = drawLogo(doc, logoSource, 50, 26);
   const companyX = 50 + logoOffset;
   doc.fillColor(white).fontSize(24).font('Helvetica-Bold').text(settings.companyName || 'Invoicefy', companyX, 30);
   let nextY = 60;
@@ -202,14 +220,14 @@ const renderClassic = (doc, invoice, client, settings, watermark) => {
      .text(invoice.bankDetails ? `Bank: ${invoice.bankDetails.bankName || invoice.bankDetails.accountName || '-'} | A/C: ${invoice.bankDetails.accountNumber || '-'} | IFSC: ${invoice.bankDetails.ifsc || '-'} | UPI: ${invoice.bankDetails.upiId || '-'}` : '', 50, 770, { align: 'center', width: 495 });
 };
 
-const renderMinimal = (doc, invoice, client, settings, watermark) => {
+const renderMinimal = (doc, invoice, client, settings, watermark, logoSource) => {
   const black = settings.headerColor;
   const gray = settings.accentColor;
   const light = '#F9FAFB';
   const line = '#D1D5DB';
   const rowHeight = settings.compactMode ? 16 : 20;
 
-  drawCompanyBlock(doc, settings, 50, 50, black);
+  drawCompanyBlock(doc, settings, logoSource, 50, 50, black);
   const documentLabel = getDocumentLabel(invoice);
   doc.fillColor(gray).fontSize(11).font('Helvetica').text(documentLabel, 50, 52, { align: 'right' });
   doc.strokeColor(black).lineWidth(2).moveTo(50, 110).lineTo(545, 110).stroke();
@@ -290,7 +308,7 @@ const renderMinimal = (doc, invoice, client, settings, watermark) => {
      .text(invoice.bankDetails ? `Bank: ${invoice.bankDetails.bankName || invoice.bankDetails.accountName || '-'} | A/C: ${invoice.bankDetails.accountNumber || '-'} | IFSC: ${invoice.bankDetails.ifsc || '-'} | UPI: ${invoice.bankDetails.upiId || '-'}` : '', 50, 760, { align: 'center', width: 495 });
 };
 
-const renderBold = (doc, invoice, client, settings, watermark) => {
+const renderBold = (doc, invoice, client, settings, watermark, logoSource) => {
   const navy = settings.headerColor;
   const accent = settings.accentColor;
   const white = '#FFFFFF';
@@ -300,7 +318,7 @@ const renderBold = (doc, invoice, client, settings, watermark) => {
   const rowHeight = settings.compactMode ? 18 : 22;
 
   doc.rect(0, 0, 595, 110).fill(navy);
-  const logoOffset = drawLogo(doc, settings, 50, 24);
+  const logoOffset = drawLogo(doc, logoSource, 50, 24);
   const companyX = 50 + logoOffset;
   doc.fillColor(white).fontSize(26).font('Helvetica-Bold').text(settings.companyName || 'Invoicefy', companyX, 30);
   if (settings.companyEmail) doc.fontSize(10).font('Helvetica').fillColor('#CBD5E1').text(settings.companyEmail, companyX, 60);
@@ -391,20 +409,21 @@ const renderBold = (doc, invoice, client, settings, watermark) => {
      .text(invoice.bankDetails ? `Bank: ${invoice.bankDetails.bankName || invoice.bankDetails.accountName || '-'} | A/C: ${invoice.bankDetails.accountNumber || '-'} | IFSC: ${invoice.bankDetails.ifsc || '-'} | UPI: ${invoice.bankDetails.upiId || '-'}` : '', 50, 775, { align: 'center', width: 495 });
 };
 
-exports.generatePDF = (invoice, client, res, template = 'classic', watermark = '') => {
+exports.generatePDF = async (invoice, client, res, template = 'classic', watermark = '', assetBaseUrl = '') => {
   const doc = new PDFDocument({ size: 'A4', margin: 50, bufferPages: true });
   const settings = getTemplateSettings(invoice, template);
+  const logoSource = await getLogoSource(settings, assetBaseUrl);
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename=${invoice.invoiceNumber}.pdf`);
   doc.pipe(res);
 
   if (template === 'minimal') {
-    renderMinimal(doc, invoice, client, settings, watermark);
+    renderMinimal(doc, invoice, client, settings, watermark, logoSource);
   } else if (template === 'bold') {
-    renderBold(doc, invoice, client, settings, watermark);
+    renderBold(doc, invoice, client, settings, watermark, logoSource);
   } else {
-    renderClassic(doc, invoice, client, settings, watermark);
+    renderClassic(doc, invoice, client, settings, watermark, logoSource);
   }
 
   doc.flushPages();

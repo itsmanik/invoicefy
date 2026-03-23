@@ -270,12 +270,16 @@ exports.downloadInvoice = async (req, res) => {
       where: { id: invoice.clientId, businessId }
     });
 
-    return generatePDF(
+    const forwardedProto = req.get('x-forwarded-proto');
+    const assetBaseUrl = `${forwardedProto || req.protocol}://${req.get('host')}`;
+
+    return await generatePDF(
       invoice,
       client,
       res,
       invoice.template || 'classic',
-      invoice.watermark || ''
+      invoice.watermark || '',
+      assetBaseUrl
     );
 
   } catch (err) {
