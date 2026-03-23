@@ -8,8 +8,9 @@ const VALID_TEMPLATES = ['classic', 'minimal', 'bold'];
 const VALID_DOCUMENT_TYPES = ['invoice', 'quotation'];
 
 const getNextDocumentNumber = async (businessId, documentType) => {
+  const where = businessId ? { businessId } : undefined;
   const invoices = await Invoice.findAll({
-    where: { businessId },
+    where,
     attributes: ['invoiceNumber'],
   });
 
@@ -61,6 +62,7 @@ const sanitizeTemplateSettings = (template, settings = {}) => {
     companyName: String(value.companyName || 'Invoicefy').trim().slice(0, 80),
     companyEmail: String(value.companyEmail || '').trim().slice(0, 120),
     companyAddress: String(value.companyAddress || '').trim().slice(0, 240),
+    logoUrl: /^\/uploads\/[A-Za-z0-9._-]+$/.test(value.logoUrl || '') ? value.logoUrl : '',
     headerColor: /^#[0-9A-Fa-f]{6}$/.test(value.headerColor || '') ? value.headerColor : fallback.headerColor,
     accentColor: /^#[0-9A-Fa-f]{6}$/.test(value.accentColor || '') ? value.accentColor : fallback.accentColor,
     compactMode: Boolean(value.compactMode),
@@ -139,12 +141,9 @@ exports.createInvoice = async (req, res) => {
     }));
 
     const totals = calculateTotals(updatedItems, tax, discount);
-    const documentNumber = await getNextDocumentNumber(businessId, safeDocumentType);
-
-    const invoice = await Invoice.create({
+    const invoicePayload = {
       businessId,
       clientId,
-      invoiceNumber: documentNumber,
 
       // ✅ Added Fields (No structure change)
       invoiceDate: invoiceDate || new Date().toISOString().slice(0, 10),
@@ -167,9 +166,30 @@ exports.createInvoice = async (req, res) => {
       template: safeTemplate,
       watermark: watermark.trim(),
       templateSettings: safeTemplateSettings
-    });
+    };
 
-    return res.status(201).json({ success: true, invoice });
+    const numberingScopes = [businessId, null];
+
+    for (const scopeBusinessId of numberingScopes) {
+      try {
+        const invoice = await Invoice.create({
+          ...invoicePayload,
+          invoiceNumber: await getNextDocumentNumber(scopeBusinessId, safeDocumentType),
+        });
+
+        return res.status(201).json({ success: true, invoice });
+      } catch (err) {
+        if (err.name !== 'SequelizeUniqueConstraintError') {
+          throw err;
+        }
+
+      }
+    }
+
+    return res.status(409).json({
+      success: false,
+      message: 'Unable to allocate a unique invoice number right now. Please try again.'
+    });
 
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -243,12 +263,16 @@ exports.downloadInvoice = async (req, res) => {
       where: { id: invoice.clientId, businessId }
     });
 
-    return generatePDF(
+    const forwardedProto = req.get('x-forwarded-proto');
+    const assetBaseUrl = `${forwardedProto || req.protocol}://${req.get('host')}`;
+
+    return await generatePDF(
       invoice,
       client,
       res,
       invoice.template || 'classic',
-      invoice.watermark || ''
+      invoice.watermark || '',
+      assetBaseUrl
     );
 
   } catch (err) {
