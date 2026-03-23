@@ -172,6 +172,13 @@ exports.createInvoice = async (req, res) => {
     return res.status(201).json({ success: true, invoice });
 
   } catch (err) {
+    if (err.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).json({
+        success: false,
+        message: 'Invoice number already exists for this business. Please try again.'
+      });
+    }
+
     return res.status(500).json({ success: false, message: err.message });
   }
 };

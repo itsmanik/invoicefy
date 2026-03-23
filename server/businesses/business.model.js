@@ -20,6 +20,14 @@ const Business = sequelize.define('Business', {
     type: DataTypes.TEXT,
     allowNull: false
   },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  phone: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   logoUrl: {
     type: DataTypes.STRING,
     allowNull: true
