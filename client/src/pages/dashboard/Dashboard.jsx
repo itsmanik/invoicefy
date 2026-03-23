@@ -41,6 +41,10 @@ const Dashboard = () => {
 
       const invoices = invoicesRes.data?.invoices || [];
       const clients = clientsRes.data?.clients || [];
+      const clientMap = {};
+      clients.forEach(c => {
+          clientMap[c.id] = c.name;
+       });
 
       // Calculate stats
       const totalInvoices = invoices.length;
@@ -63,8 +67,12 @@ const Dashboard = () => {
       });
 
       // Get recent invoices (last 5)
-      setRecentInvoices(invoices.slice(0, 5));
+      const enrichedInvoices = invoices.map(inv => ({
+  ...inv,
+  clientName: clientMap[inv.clientId]
+}));
 
+setRecentInvoices(enrichedInvoices.slice(0, 5));
     } catch (error) {
       toast.error('Failed to fetch dashboard data');
       console.error('Dashboard error:', error);
@@ -211,7 +219,7 @@ const Dashboard = () => {
                       </Link>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {invoice.client?.name || 'N/A'}
+                      {invoice.clientName || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(invoice.createdAt).toLocaleDateString()}
