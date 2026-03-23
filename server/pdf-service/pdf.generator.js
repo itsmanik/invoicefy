@@ -1,5 +1,7 @@
 // server/pdf-service/pdf.generator.js
 
+const fs = require('fs');
+const path = require('path');
 const PDFDocument = require('pdfkit');
 
 const formatCurr = (num) => `Rs. ${Number(num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -18,6 +20,7 @@ const getTemplateSettings = (invoice, template) => {
     companyName: saved.companyName || 'Invoicefy',
     companyEmail: saved.companyEmail || '',
     companyAddress: saved.companyAddress || '',
+    logoUrl: /^\/uploads\/[A-Za-z0-9._-]+$/.test(saved.logoUrl || '') ? saved.logoUrl : '',
     headerColor: /^#[0-9A-Fa-f]{6}$/.test(saved.headerColor || '') ? saved.headerColor : defaults.headerColor,
     accentColor: /^#[0-9A-Fa-f]{6}$/.test(saved.accentColor || '') ? saved.accentColor : defaults.accentColor,
     compactMode: Boolean(saved.compactMode),
@@ -31,16 +34,43 @@ const drawWatermark = (doc, text) => {
 
 const getDocumentLabel = (invoice) => invoice.documentType === 'quotation' ? 'QUOTATION' : 'INVOICE';
 
+const resolveLogoPath = (logoUrl = '') => {
+  if (!/^\/uploads\/[A-Za-z0-9._-]+$/.test(logoUrl)) return null;
+
+  const filePath = path.join(__dirname, '..', logoUrl.replace(/^\//, ''));
+  if (!fs.existsSync(filePath)) return null;
+  if (!/\.(png|jpe?g)$/i.test(filePath)) return null;
+
+  return filePath;
+};
+
+const drawLogo = (doc, settings, x, y, options = {}) => {
+  const filePath = resolveLogoPath(settings.logoUrl);
+  if (!filePath) return 0;
+
+  const fit = options.fit || [56, 56];
+
+  try {
+    doc.image(filePath, x, y, { fit, align: 'left', valign: 'center' });
+    return fit[0] + (options.gap || 12);
+  } catch (error) {
+    return 0;
+  }
+};
+
 const drawCompanyBlock = (doc, settings, x, y, color = '#111827') => {
-  doc.fillColor(color).fontSize(20).font('Helvetica-Bold').text(settings.companyName || 'Invoicefy', x, y);
+  const logoOffset = drawLogo(doc, settings, x, y - 4);
+  const textX = x + logoOffset;
+
+  doc.fillColor(color).fontSize(20).font('Helvetica-Bold').text(settings.companyName || 'Invoicefy', textX, y);
   let nextY = y + 24;
   doc.font('Helvetica').fontSize(10).fillColor(color);
   if (settings.companyAddress) {
-    doc.text(settings.companyAddress, x, nextY, { width: 220 });
+    doc.text(settings.companyAddress, textX, nextY, { width: 220 });
     nextY += 28;
   }
   if (settings.companyEmail) {
-    doc.text(settings.companyEmail, x, nextY, { width: 220 });
+    doc.text(settings.companyEmail, textX, nextY, { width: 220 });
   }
 };
 
@@ -58,15 +88,17 @@ const renderClassic = (doc, invoice, client, settings, watermark) => {
   doc.rect(0, 0, 595, 110).fill(primaryColor);
   
   // Left side: Company Block
-  doc.fillColor(white).fontSize(24).font('Helvetica-Bold').text(settings.companyName || 'Invoicefy', 50, 30);
+  const logoOffset = drawLogo(doc, settings, 50, 26);
+  const companyX = 50 + logoOffset;
+  doc.fillColor(white).fontSize(24).font('Helvetica-Bold').text(settings.companyName || 'Invoicefy', companyX, 30);
   let nextY = 60;
   doc.font('Helvetica').fontSize(10);
   if (settings.companyAddress) {
-    doc.text(settings.companyAddress, 50, nextY, { width: 220 });
+    doc.text(settings.companyAddress, companyX, nextY, { width: 220 });
     nextY += 15;
   }
   if (settings.companyEmail) {
-    doc.text(settings.companyEmail, 50, nextY, { width: 220 });
+    doc.text(settings.companyEmail, companyX, nextY, { width: 220 });
   }
 
   // Right side: Document Label & Details
@@ -268,8 +300,10 @@ const renderBold = (doc, invoice, client, settings, watermark) => {
   const rowHeight = settings.compactMode ? 18 : 22;
 
   doc.rect(0, 0, 595, 110).fill(navy);
-  doc.fillColor(white).fontSize(26).font('Helvetica-Bold').text(settings.companyName || 'Invoicefy', 50, 30);
-  if (settings.companyEmail) doc.fontSize(10).font('Helvetica').fillColor('#CBD5E1').text(settings.companyEmail, 50, 60);
+  const logoOffset = drawLogo(doc, settings, 50, 24);
+  const companyX = 50 + logoOffset;
+  doc.fillColor(white).fontSize(26).font('Helvetica-Bold').text(settings.companyName || 'Invoicefy', companyX, 30);
+  if (settings.companyEmail) doc.fontSize(10).font('Helvetica').fillColor('#CBD5E1').text(settings.companyEmail, companyX, 60);
   const documentLabel = getDocumentLabel(invoice);
   doc.fillColor(accent).fontSize(36).font('Helvetica-Bold').text(documentLabel, 50, 25, { align: 'right' });
   

@@ -11,7 +11,7 @@ import {
 import toast from 'react-hot-toast';
 
 const DEFAULT_SETTINGS = {
-  companyName: '', website: '', companyEmail: '', companyAddress: '', logoPreview: null,
+  companyName: '', website: '', companyEmail: '', companyAddress: '', logoPreview: null, logoUrl: null,
   templateId: 'classic', tableColor: '#2563eb', primaryColor: '#1d4ed8',
   compactMode: false, showRowDividers: true,
   logoX: 0, logoY: 0, marginT: 0, marginB: 0,
@@ -61,12 +61,14 @@ const InvoicePro = () => {
       setClients(cl);
       // Pre-fill company from business profile
       const biz = JSON.parse(localStorage.getItem('business') || '{}');
+      const businessLogoUrl = biz.logoUrl || null;
       setSettings(prev => ({
         ...prev,
         companyName:    prev.companyName    || biz.name    || '',
         companyEmail:   prev.companyEmail   || biz.email   || '',
         companyAddress: prev.companyAddress || biz.address || '',
-        logoPreview:    prev.logoPreview    || getAssetUrl(biz.logoUrl) || null,
+        logoUrl:        businessLogoUrl,
+        logoPreview:    prev.logoUrl === businessLogoUrl ? (prev.logoPreview || getAssetUrl(businessLogoUrl) || null) : (getAssetUrl(businessLogoUrl) || null),
       }));
       if (biz.gstNumber) setForm(f => ({ ...f, yourGST: biz.gstNumber }));
     } catch {
@@ -132,6 +134,7 @@ const InvoicePro = () => {
           accentColor: settings.primaryColor,
           compactMode: settings.compactMode,
           showRowDividers: settings.showRowDividers,
+          logoUrl: settings.logoUrl,
         },
         settings,
       });
