@@ -22,7 +22,8 @@ exports.register = async (req, res) => {
       password,
       businessName,
       gstNumber,
-      address
+      address,
+      phone
     } = req.body;
 
     if (!ownerName || !email || !password || !businessName || !gstNumber || !address) {
@@ -45,6 +46,8 @@ exports.register = async (req, res) => {
       name: businessName,
       gstNumber,
       address,
+      email,
+      phone: phone || null,
       logoUrl
     });
 
