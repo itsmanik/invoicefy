@@ -1,6 +1,18 @@
 const { Op } = require('sequelize');
 const Invoice = require('../invoices/invoice.model');
+const Client = require('../clients/client.model');
 
+const invoices = await Invoice.findAll({
+  where: { businessId },
+  order: [['createdAt', 'DESC']],
+  limit: 5,
+  include: [
+    {
+      model: Client,
+      attributes: ['name']
+    }
+  ]
+});
 exports.getDashboard = async (req, res) => {
   try {
     const businessId = req.user.businessId;
@@ -38,17 +50,18 @@ exports.getDashboard = async (req, res) => {
     });
 
     return res.status(200).json({
-      success: true,
-      analytics: {
-        totalInvoices,
-        paidInvoices,
-        unpaidInvoices,
-        overdueInvoices,
-        totalRevenue: Number(totalRevenue.toFixed(2)),
-        outstandingAmount: Number(outstandingAmount.toFixed(2)),
-        invoicesCreatedLast30Days: last30DaysCount
-      }
-    });
+  success: true,
+  analytics: {
+    totalInvoices,
+    paidInvoices,
+    unpaidInvoices,
+    overdueInvoices,
+    totalRevenue: Number(totalRevenue.toFixed(2)),
+    outstandingAmount: Number(outstandingAmount.toFixed(2)),
+    invoicesCreatedLast30Days: last30DaysCount
+  },
+  recentInvoices: invoices 
+});
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
