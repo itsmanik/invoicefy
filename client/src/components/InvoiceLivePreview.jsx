@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { getAssetUrl } from '../services/api';
 
 function fmt(n) {
   return 'Rs. ' + (parseFloat(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -22,6 +23,24 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
   const accentColor = settings.primaryColor || (template === 'minimal' ? '#6B7280' : template === 'bold' ? '#F59E0B' : '#1d4ed8');
   const compactMode = Boolean(settings.compactMode);
   const showRowDividers = settings.showRowDividers !== false;
+
+  const logoSrc = settings.logoPreview || getAssetUrl(settings.logoUrl);
+
+  const renderCompanyIdentity = (textClass = '', detailClass = '') => (
+    <div className="flex items-start gap-3">
+      {logoSrc ? (
+        <img src={logoSrc} alt="Company logo" className="h-12 w-12 rounded-lg object-contain bg-white/90 p-1 shadow-sm" />
+      ) : null}
+      <div>
+        <div className={textClass}>{settings.companyName || 'Invoicefy'}</div>
+        <div className={detailClass}>
+          {settings.companyAddress && <div>{settings.companyAddress}</div>}
+          {settings.companyEmail && <div>{settings.companyEmail}</div>}
+        </div>
+      </div>
+    </div>
+  );
+
 
   const renderFooter = () => (
     <div className="mt-8 pt-4 border-t border-slate-100 text-[8px] text-center text-slate-500">
@@ -55,13 +74,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden text-[10px] text-slate-800 shadow-inner">
         <div className="px-6 py-5">
           <div className="flex items-start justify-between border-b-2 border-slate-900 pb-4">
-            <div>
-              <div className="text-lg font-bold text-slate-900">{settings.companyName || 'Invoicefy'}</div>
-              <div className="mt-1 text-[9px] text-slate-500 leading-tight">
-                {settings.companyAddress && <div>{settings.companyAddress}</div>}
-                {settings.companyEmail && <div>{settings.companyEmail}</div>}
-              </div>
-            </div>
+            {renderCompanyIdentity('text-lg font-bold text-slate-900', 'mt-1 text-[9px] text-slate-500 leading-tight')}
             <div className="text-right">
               <div className="text-base tracking-[0.3em] text-slate-500">{documentLabel}</div>
               <div className="mt-2 text-[9px] text-slate-500">Invoice No: {invoiceNumber}</div>
@@ -113,13 +126,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden text-[10px] text-slate-800 shadow-inner">
         <div className="px-6 py-5 text-white" style={{ background: headerColor }}>
           <div className="flex items-start justify-between">
-            <div>
-              <div className="text-xl font-bold">{settings.companyName || 'Invoicefy'}</div>
-              <div className="mt-1 text-[9px] text-slate-300 leading-tight">
-                {settings.companyAddress && <div>{settings.companyAddress}</div>}
-                {settings.companyEmail && <div>{settings.companyEmail}</div>}
-              </div>
-            </div>
+            {renderCompanyIdentity('text-xl font-bold', 'mt-1 text-[9px] text-slate-300 leading-tight')}
             <div className="text-right">
               <div className="text-2xl font-black tracking-[0.2em]" style={{ color: accentColor }}>{documentLabel}</div>
               <div className="mt-2 text-[9px] text-slate-300">No: {invoiceNumber}</div>
@@ -171,13 +178,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden text-[10px] text-slate-800 shadow-inner">
       <div className="flex items-start justify-between px-6 py-5 text-white" style={{ background: headerColor }}>
-        <div>
-          <div className="text-xl font-bold">{settings.companyName || 'Invoicefy'}</div>
-          <div className="mt-1 text-[9px] text-blue-100 leading-tight">
-            {settings.companyAddress && <div>{settings.companyAddress}</div>}
-            {settings.companyEmail && <div>{settings.companyEmail}</div>}
-          </div>
-        </div>
+        {renderCompanyIdentity('text-xl font-bold', 'mt-1 text-[9px] text-blue-100 leading-tight')}
         <div className="text-right">
           <div className="text-2xl font-black">{documentLabel}</div>
           <div className="mt-2 text-[9px] text-blue-100">Invoice Number: {invoiceNumber}</div>

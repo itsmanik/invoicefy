@@ -22,8 +22,7 @@ const Invoice = sequelize.define('Invoice', {
 
   invoiceNumber: {
     type: DataTypes.STRING,
-    allowNull: false,
-    unique: true
+    allowNull: false
   },
 
   // ✅ NEW: Invoice Date
@@ -115,7 +114,13 @@ const Invoice = sequelize.define('Invoice', {
 
 }, {
   tableName: 'invoices',
-  timestamps: true
+  timestamps: true,
+  indexes: [
+    {
+      unique: true,
+      fields: ['businessId', 'invoiceNumber']
+    }
+  ]
 });
 
 module.exports = Invoice;
