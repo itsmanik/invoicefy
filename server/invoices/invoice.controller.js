@@ -62,6 +62,7 @@ const sanitizeTemplateSettings = (template, settings = {}) => {
     companyName: String(value.companyName || 'Invoicefy').trim().slice(0, 80),
     companyEmail: String(value.companyEmail || '').trim().slice(0, 120),
     companyAddress: String(value.companyAddress || '').trim().slice(0, 240),
+    logoUrl: /^\/uploads\/[A-Za-z0-9._-]+$/.test(value.logoUrl || '') ? value.logoUrl : '',
     headerColor: /^#[0-9A-Fa-f]{6}$/.test(value.headerColor || '') ? value.headerColor : fallback.headerColor,
     accentColor: /^#[0-9A-Fa-f]{6}$/.test(value.accentColor || '') ? value.accentColor : fallback.accentColor,
     compactMode: Boolean(value.compactMode),
