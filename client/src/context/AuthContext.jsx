@@ -1,8 +1,17 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { authAPI, businessAPI } from '../services/api';
+import { authAPI, businessAPI, getAssetUrl } from '../services/api';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext(null);
+
+const normalizeBusiness = (business) => {
+  if (!business) return business;
+
+  return {
+    ...business,
+    logoUrl: getAssetUrl(business.logoUrl),
+  };
+};
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -27,7 +36,9 @@ export const AuthProvider = ({ children }) => {
         setUser(JSON.parse(storedUser));
       }
       if (storedBusiness) {
-        setBusiness(JSON.parse(storedBusiness));
+        const normalizedBusiness = normalizeBusiness(JSON.parse(storedBusiness));
+        setBusiness(normalizedBusiness);
+        localStorage.setItem('business', JSON.stringify(normalizedBusiness));
       }
       setLoading(false);
     };
@@ -39,14 +50,15 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authAPI.login({ email, password });
       const { token, user, business } = response.data;
+      const normalizedBusiness = normalizeBusiness(business);
 
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('business', JSON.stringify(business));
+      localStorage.setItem('business', JSON.stringify(normalizedBusiness));
 
       setToken(token);
       setUser(user);
-      setBusiness(business);
+      setBusiness(normalizedBusiness);
 
       toast.success('Login successful!');
       return { success: true };
@@ -60,14 +72,15 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authAPI.register(userData);
       const { token, user, business } = response.data;
+      const normalizedBusiness = normalizeBusiness(business);
 
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('business', JSON.stringify(business));
+      localStorage.setItem('business', JSON.stringify(normalizedBusiness));
 
       setToken(token);
       setUser(user);
-      setBusiness(business);
+      setBusiness(normalizedBusiness);
 
       toast.success('Registration successful!');
       return { success: true };
