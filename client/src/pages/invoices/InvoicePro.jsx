@@ -61,14 +61,18 @@ const InvoicePro = () => {
       setClients(cl);
       // Pre-fill company from business profile
       const biz = JSON.parse(localStorage.getItem('business') || '{}');
-      const businessLogoUrl = biz.logoUrl || null;
+      const businessLogoUrl = typeof biz.logoUrl === 'string' && biz.logoUrl.startsWith('/uploads/')
+        ? biz.logoUrl
+        : null;
+      const businessLogoPreview = biz.logoAssetUrl || getAssetUrl(businessLogoUrl) || null;
+
       setSettings(prev => ({
         ...prev,
-        companyName:    prev.companyName    || biz.name    || '',
-        companyEmail:   prev.companyEmail   || biz.email   || '',
+        companyName: prev.companyName || biz.name || '',
+        companyEmail: prev.companyEmail || biz.email || '',
         companyAddress: prev.companyAddress || biz.address || '',
-        logoUrl:        businessLogoUrl,
-        logoPreview:    prev.logoUrl === businessLogoUrl ? (prev.logoPreview || getAssetUrl(businessLogoUrl) || null) : (getAssetUrl(businessLogoUrl) || null),
+        logoUrl: businessLogoUrl,
+        logoPreview: prev.logoUrl === businessLogoUrl ? (prev.logoPreview || businessLogoPreview) : businessLogoPreview,
       }));
       if (biz.gstNumber) setForm(f => ({ ...f, yourGST: biz.gstNumber }));
     } catch {

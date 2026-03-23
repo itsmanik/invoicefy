@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { getAssetUrl } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -16,6 +16,16 @@ const Settings = () => {
     email: business?.email || '',
     phone: business?.phone || '',
   });
+
+  useEffect(() => {
+    setFormData({
+      name: business?.name || '',
+      gstNumber: business?.gstNumber || '',
+      address: business?.address || '',
+      email: business?.email || '',
+      phone: business?.phone || '',
+    });
+  }, [business]);
 
   const handleChange = (e) => {
     setFormData({
@@ -76,7 +86,7 @@ const Settings = () => {
             <div className="relative">
               {business?.logoUrl ? (
                 <img
-                  src={getAssetUrl(business.logoUrl)}
+                  src={business.logoAssetUrl || getAssetUrl(business.logoUrl)}
                   alt="Business logo"
                   className="h-32 w-32 object-cover rounded-2xl shadow-md border-4 border-white transition-transform group-hover:scale-105"
                 />

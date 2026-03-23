@@ -67,7 +67,7 @@ app.use((error, req, res, next) => {
   return next();
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 5000;
 
 sequelize.authenticate()
   .then(async () => {
