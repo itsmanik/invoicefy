@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 
 function fmt(n) {
-  return '₹' + (parseFloat(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return 'Rs. ' + (parseFloat(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export default function InvoiceLivePreview({ form, settings, clients }) {
@@ -22,6 +22,17 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
   const accentColor = settings.primaryColor || (template === 'minimal' ? '#6B7280' : template === 'bold' ? '#F59E0B' : '#1d4ed8');
   const compactMode = Boolean(settings.compactMode);
   const showRowDividers = settings.showRowDividers !== false;
+
+  const renderFooter = () => (
+    <div className="mt-8 pt-4 border-t border-slate-100 text-[8px] text-center text-slate-500">
+      {form.disclaimer && <div className="italic mb-1.5">{form.disclaimer}</div>}
+      {(settings.accountNumber || settings.ifsc || settings.accountHolderName) && (
+        <div className="not-italic">
+          Bank: {settings.accountHolderName || '-'} | A/C: {settings.accountNumber || '-'} | IFSC: {settings.ifsc || '-'} | UPI: -
+        </div>
+      )}
+    </div>
+  );
 
   const renderRows = (rowClass = '', amountClass = '') => visibleItems.length ? visibleItems.map((item, idx) => (
     <tr key={idx} className={rowClass ? rowClass(idx) : ''} style={showRowDividers ? undefined : { borderBottom: 'none' }}>
@@ -91,6 +102,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
             {parseFloat(form.tax) > 0 && <div className="flex justify-between"><span>Tax:</span><span>+{fmt(taxAmt)}</span></div>}
             <div className="flex justify-between border-t-2 pt-2 text-sm font-bold" style={{ borderColor: headerColor, color: headerColor }}><span>TOTAL</span><span>{fmt(total)}</span></div>
           </div>
+          {renderFooter()}
         </div>
       </div>
     );
@@ -150,6 +162,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
             {parseFloat(form.tax) > 0 && <div className="flex justify-between"><span>Tax:</span><span>+{fmt(taxAmt)}</span></div>}
             <div className="-mx-3 -mb-3 mt-2 flex justify-between px-3 py-2 text-sm font-bold text-white" style={{ background: headerColor }}><span>TOTAL</span><span>{fmt(total)}</span></div>
           </div>
+          {renderFooter()}
         </div>
       </div>
     );
@@ -207,7 +220,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
           <div className="flex justify-between border-t border-slate-200 pt-2 text-sm font-bold" style={{ color: accentColor }}><span>TOTAL</span><span>{fmt(total)}</span></div>
         </div>
 
-        {form.disclaimer && <div className="mt-5 border-t border-slate-100 pt-3 text-[8px] italic text-slate-400">{form.disclaimer}</div>}
+        {renderFooter()}
       </div>
     </div>
   );
