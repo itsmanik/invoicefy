@@ -1,6 +1,16 @@
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_ORIGIN = API_URL.replace(/\/api\/?$/, '');
+
+export const getAssetUrl = (assetPath) => {
+  if (!assetPath) return assetPath;
+  if (/^(https?:)?\/\//.test(assetPath) || assetPath.startsWith('data:') || assetPath.startsWith('blob:')) {
+    return assetPath;
+  }
+
+  return `${API_ORIGIN}${assetPath.startsWith('/') ? assetPath : `/${assetPath}`}`;
+};
 
 const api = axios.create({
   baseURL: API_URL,
