@@ -7,9 +7,12 @@ const AuthContext = createContext(null);
 const normalizeBusiness = (business) => {
   if (!business) return business;
 
+  const rawLogoUrl = business.logoUrl || business.logoPath || null;
+
   return {
     ...business,
-    logoUrl: getAssetUrl(business.logoUrl),
+    logoUrl: rawLogoUrl,
+    logoAssetUrl: getAssetUrl(rawLogoUrl),
   };
 };
 
@@ -103,7 +106,7 @@ export const AuthProvider = ({ children }) => {
   const updateBusiness = async (businessData) => {
     try {
       const response = await businessAPI.updateProfile(businessData);
-      const updatedBusiness = response.data.business || response.data;
+      const updatedBusiness = normalizeBusiness(response.data.business || response.data);
       setBusiness(updatedBusiness);
       localStorage.setItem('business', JSON.stringify(updatedBusiness));
       toast.success('Business updated successfully');
@@ -117,7 +120,7 @@ export const AuthProvider = ({ children }) => {
   const uploadLogo = async (formData) => {
     try {
       const response = await businessAPI.uploadLogo(formData);
-      const updatedBusiness = { ...business, logoUrl: response.data.logoUrl };
+      const updatedBusiness = normalizeBusiness({ ...business, logoUrl: response.data.logoUrl });
       setBusiness(updatedBusiness);
       localStorage.setItem('business', JSON.stringify(updatedBusiness));
       toast.success('Logo uploaded successfully');
