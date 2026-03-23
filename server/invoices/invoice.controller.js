@@ -8,22 +8,27 @@ const VALID_TEMPLATES = ['classic', 'minimal', 'bold'];
 const VALID_DOCUMENT_TYPES = ['invoice', 'quotation'];
 
 const getNextDocumentNumber = async (businessId, documentType) => {
-  const where = businessId ? { businessId } : undefined;
+  const prefix = documentType === 'quotation' ? 'QUO' : 'INV';
+  const where = { documentType };
+
+  if (businessId) {
+    where.businessId = businessId;
+  }
+
   const invoices = await Invoice.findAll({
     where,
     attributes: ['invoiceNumber'],
   });
 
   const maxSerial = invoices.reduce((max, invoice) => {
-    const match = String(invoice.invoiceNumber || '').match(/(\d+)$/);
+    const match = String(invoice.invoiceNumber || '').match(new RegExp(`^${prefix}-(\\d+)$`));
     if (!match) return max;
+
     const serial = Number(match[1]);
     return Number.isFinite(serial) ? Math.max(max, serial) : max;
   }, 0);
 
-  const nextSerial = maxSerial + 1;
-  const prefix = documentType === 'quotation' ? 'QUO' : 'INV';
-  return `${prefix}-${String(nextSerial).padStart(4, '0')}`;
+  return `${prefix}-${String(maxSerial + 1).padStart(4, '0')}`;
 };
 
 // const sanitizeTemplateSettings = (template, settings = {}) => {
