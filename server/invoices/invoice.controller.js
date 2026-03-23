@@ -8,8 +8,9 @@ const VALID_TEMPLATES = ['classic', 'minimal', 'bold'];
 const VALID_DOCUMENT_TYPES = ['invoice', 'quotation'];
 
 const getNextDocumentNumber = async (businessId, documentType) => {
+  const where = businessId ? { businessId } : undefined;
   const invoices = await Invoice.findAll({
-    where: { businessId },
+    where,
     attributes: ['invoiceNumber'],
   });
 
@@ -139,12 +140,9 @@ exports.createInvoice = async (req, res) => {
     }));
 
     const totals = calculateTotals(updatedItems, tax, discount);
-    const documentNumber = await getNextDocumentNumber(businessId, safeDocumentType);
-
-    const invoice = await Invoice.create({
+    const invoicePayload = {
       businessId,
       clientId,
-      invoiceNumber: documentNumber,
 
       // ✅ Added Fields (No structure change)
       invoiceDate: invoiceDate || new Date().toISOString().slice(0, 10),
@@ -167,9 +165,30 @@ exports.createInvoice = async (req, res) => {
       template: safeTemplate,
       watermark: watermark.trim(),
       templateSettings: safeTemplateSettings
-    });
+    };
 
-    return res.status(201).json({ success: true, invoice });
+    const numberingScopes = [businessId, null];
+
+    for (const scopeBusinessId of numberingScopes) {
+      try {
+        const invoice = await Invoice.create({
+          ...invoicePayload,
+          invoiceNumber: await getNextDocumentNumber(scopeBusinessId, safeDocumentType),
+        });
+
+        return res.status(201).json({ success: true, invoice });
+      } catch (err) {
+        if (err.name !== 'SequelizeUniqueConstraintError') {
+          throw err;
+        }
+
+      }
+    }
+
+    return res.status(409).json({
+      success: false,
+      message: 'Unable to allocate a unique invoice number right now. Please try again.'
+    });
 
   } catch (err) {
     if (err.name === 'SequelizeUniqueConstraintError') {
