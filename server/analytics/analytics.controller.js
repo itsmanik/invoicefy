@@ -5,7 +5,15 @@ exports.getDashboard = async (req, res) => {
   try {
     const businessId = req.user.businessId;
 
-    const invoices = await Invoice.findAll({ where: { businessId } });
+    const invoices = await Invoice.findAll({ where: { businessId } 
+                                           ,
+  include: [
+    {
+      model: Client,
+      attributes: ['name']
+    }
+  ]
+});
 
     const totalInvoices = invoices.length;
     const paidInvoices = invoices.filter((inv) => inv.status === 'Paid').length;
