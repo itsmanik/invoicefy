@@ -50,7 +50,10 @@ const InvoicesList = () => {
             toast.error('Failed to download PDF', { id: 'pdf-toast' });
         }
     };
-
+   
+const handlePreviewPDF = (id) => {
+    window.open(`${process.env.REACT_APP_API_URL}/invoices/pdf/${id}`, '_blank');
+};
     const handleStatusChange = async (id, newStatus) => {
         try {
             const res = await invoicesAPI.updateStatus(id, newStatus);
