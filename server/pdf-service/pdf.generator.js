@@ -415,7 +415,7 @@ exports.generatePDF = async (invoice, client, res, template = 'classic', waterma
   const logoSource = await getLogoSource(settings, assetBaseUrl);
 
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename=${invoice.invoiceNumber}.pdf`);
+  res.setHeader('Content-Disposition', `inline; filename=${invoice.invoiceNumber}.pdf`);
   doc.pipe(res);
 
   if (template === 'minimal') {
