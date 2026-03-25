@@ -164,8 +164,11 @@ const NewInvoice = () => {
         clientGST,
         disclaimer,
         bankDetails,
-        template,    // ← NEW
-        watermark    // ← NEW
+        template,
+        watermark,
+        templateSettings: {
+          customTemplateUrl: JSON.parse(localStorage.getItem('business') || '{}').customTemplateUrl
+        }
       });
       toast.success('Invoice created successfully!');
       navigate('/invoices');

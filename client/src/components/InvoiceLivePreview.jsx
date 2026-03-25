@@ -98,10 +98,21 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
   const thAlign = { left: 'text-left', center: 'text-center', right: 'text-right' };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-inner text-[9px] text-slate-800 font-sans">
+    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-inner text-[9px] text-slate-800 font-sans relative">
+      {/* ── CUSTOM TEMPLATE BACKGROUND ── */}
+      {template === 'custom' && settings.customTemplatePreview && (
+        <div 
+          className="absolute inset-0 z-0 opacity-100" 
+          style={{ 
+            backgroundImage: `url(${settings.customTemplatePreview})`,
+            backgroundSize: '100% 100%',
+            backgroundRepeat: 'no-repeat'
+          }}
+        />
+      )}
 
       {/* ── 1. HEADER BAR ─────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-5 py-3" style={{ background: navy, minHeight: 72 }}>
+      <div className={`flex items-center justify-between px-5 py-3 relative z-10 ${template === 'custom' ? 'bg-white/90 backdrop-blur-xl' : ''}`} style={{ background: template === 'custom' ? 'transparent' : navy, minHeight: 72 }}>
         {/* Left: logo + company */}
         <div className="flex items-center gap-2.5">
           {logoSrc && (
@@ -125,7 +136,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       </div>
 
       {/* ── 2. META ROW ───────────────────────────────────────────────── */}
-      <div className="flex justify-end px-5 pt-2 pb-1 gap-4 text-[8px]">
+      <div className={`flex justify-end px-5 pt-2 pb-1 gap-4 text-[8px] relative z-10 ${template === 'custom' ? 'bg-white/80 backdrop-blur-md' : ''}`}>
         <div className="text-right space-y-0.5">
           <div className="text-slate-500">{invoiceNumber}</div>
           <div className="text-slate-500">Date: {form.invoiceDate || '—'}</div>
@@ -150,7 +161,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       <div className="mx-5 border-t border-slate-200" />
 
       {/* ── 4. FROM / BILL TO ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 px-5 pt-2 pb-3 gap-4" style={{ borderBottom: '1px solid #E2E8F0' }}>
+      <div className={`grid grid-cols-2 px-5 pt-2 pb-3 gap-4 relative z-10 ${template === 'custom' ? 'bg-white/90 backdrop-blur-md border-y border-slate-100/50' : ''}`} style={{ borderBottom: template === 'custom' ? 'none' : '1px solid #E2E8F0' }}>
         {/* FROM */}
         <div className="pr-4" style={{ borderRight: '1px solid #E2E8F0' }}>
           <div className="text-[7px] font-bold tracking-widest text-slate-400 mb-1">FROM</div>
@@ -186,11 +197,11 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       </div>
 
       {/* ── 5. ITEMS TABLE ───────────────────────────────────────────── */}
-      <div className="mx-5 mt-3" style={{ border: '1px solid #E2E8F0' }}>
+      <div className={`mx-5 mt-3 relative z-10 ${template === 'custom' ? 'bg-white/70 backdrop-blur-md rounded-lg overflow-hidden' : ''}`} style={{ border: template === 'custom' ? 'none' : '1px solid #E2E8F0' }}>
         {/* Header row */}
         <div
           className="flex text-white text-[8.5px] font-bold"
-          style={{ background: navy, padding: '12px 8px' }}
+          style={{ background: template === 'custom' ? 'transparent' : navy, color: template === 'custom' ? '#000' : '#fff', padding: '12px 8px' }}
         >
           {cols.map((col, ci) => (
             <div key={ci} style={{ flex: col.flex }} className={thAlign[col.align]}>
@@ -246,7 +257,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       </div>
 
       {/* ── 6. TOTALS + BANK SIDE BY SIDE ────────────────────────────── */}
-      <div className="flex gap-3 px-5 pt-7 pb-3 items-start">
+      <div className={`flex gap-3 px-5 pt-7 pb-3 items-start relative z-10 ${template === 'custom' ? 'bg-white/80 backdrop-blur-md mx-5 rounded-xl border border-white/50 shadow-sm mb-4' : ''}`}>
 
         {/* LEFT: Bank / Payment details */}
         {hasBD && (
@@ -309,7 +320,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
           {/* GRAND TOTAL */}
           <div
             className="flex justify-between items-center text-white font-bold text-[10px]"
-            style={{ background: navy, padding: '5px 8px' }}
+            style={{ background: template === 'custom' ? 'transparent' : navy, color: template === 'custom' ? '#000' : '#fff', padding: '5px 8px', borderTop: template === 'custom' ? '1px solid #000' : 'none' }}
           >
             <span>GRAND TOTAL</span>
             <span>{fmt(total)}</span>
@@ -318,7 +329,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       </div>
 
       {/* ── 6b. SIGNATURE BLOCK ── */}
-      <div className="px-5 pb-4 flex justify-end" style={{ minHeight: 80 }}>
+      <div className="px-5 pb-4 flex justify-end relative z-10" style={{ minHeight: 80 }}>
         <div
           className="text-center"
           style={{
@@ -342,8 +353,8 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
 
       {/* ── 7. FOOTER BAR ────────────────────────────────────────────── */}
       <div
-        className="px-5 flex items-center justify-center"
-        style={{ background: navy, minHeight: 32 }}
+        className="px-5 flex items-center justify-center relative z-10"
+        style={{ background: template === 'custom' ? 'transparent' : navy, minHeight: 32 }}
       >
         <div className="text-[7.5px] text-center" style={{ color: '#CBD5E1' }}>
           {form.disclaimer || 'Payment expected within 45 days from invoice date.'}

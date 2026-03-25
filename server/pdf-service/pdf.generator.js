@@ -50,26 +50,24 @@ const getTemplateSettings = (invoice, template) => {
     accentColor:     /^#[0-9A-Fa-f]{6}$/.test(saved.accentColor || '') ? saved.accentColor : defaults.accentColor,
     compactMode:     Boolean(saved.compactMode),
     showRowDividers: saved.showRowDividers !== false,
+    customTemplateUrl: saved.customTemplateUrl || '',
   };
 };
 
-const resolveLogoPath = (logoUrl = '') => {
-  if (!/^\/uploads\/[A-Za-z0-9._-]+$/.test(logoUrl)) return null;
-  const filePath = path.join(__dirname, '..', logoUrl.replace(/^\//, ''));
+const resolveAssetPath = (assetUrl = '') => {
+  if (!/^\/uploads\/[A-Za-z0-9._-]+$/.test(assetUrl)) return null;
+  const filePath = path.join(__dirname, '..', assetUrl.replace(/^\//, ''));
   if (!fs.existsSync(filePath)) return null;
-  if (!/\.(png|jpe?g)$/i.test(filePath)) return null;
   return filePath;
 };
 
-const getLogoSource = async (settings, assetBaseUrl = '') => {
-  const filePath = resolveLogoPath(settings.logoUrl);
+const getAssetSource = async (assetUrl, assetBaseUrl = '') => {
+  const filePath = resolveAssetPath(assetUrl);
   if (filePath) return filePath;
-  if (!assetBaseUrl || !/^\/uploads\/[A-Za-z0-9._-]+$/.test(settings.logoUrl || '')) return null;
+  if (!assetBaseUrl || !/^\/uploads\/[A-Za-z0-9._-]+$/.test(assetUrl || '')) return null;
   try {
-    const response = await fetch(new URL(settings.logoUrl, assetBaseUrl).toString());
+    const response = await fetch(new URL(assetUrl, assetBaseUrl).toString());
     if (!response.ok) return null;
-    const contentType = response.headers.get('content-type') || '';
-    if (!/^image\/(png|jpe?g)$/i.test(contentType)) return null;
     return Buffer.from(await response.arrayBuffer());
   } catch { return null; }
 };
@@ -83,7 +81,7 @@ const drawLogo = (doc, logoSource, x, y, size) => {
 };
 
 // ─── SINGLE UNIFIED LAYOUT (forced to exactly ONE page) ──────────────────────
-const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSource, colors) => {
+const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSource, colors, backgroundSource) => {
   const { navy, accent, white, bodyText, mutedText, borderColor, tableHeaderBg, totalRowBg } = colors;
 
   const PAGE_W  = 595;
@@ -91,24 +89,39 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   const MARGIN  = 36;
   const CONTENT = PAGE_W - MARGIN * 2;
 
+  // ── 0. BACKGROUND ────────────────────────────────────────────────────────
+  if (backgroundSource) {
+    try {
+      doc.image(backgroundSource, 0, 0, { width: PAGE_W, height: PAGE_H });
+    } catch (e) { console.error('BG Error:', e); }
+  }
+
   // ── 1. HEADER ────────────────────────────────────────────────────────────
   const HEADER_H = 90;
-  doc.rect(0, 0, PAGE_W, HEADER_H).fill(navy);
+  if (!backgroundSource) {
+    doc.rect(0, 0, PAGE_W, HEADER_H).fill(navy);
+  } else {
+    // White overlay for header text legibility - matching bg-white/90
+    doc.save()
+       .rect(0, 0, PAGE_W, HEADER_H)
+       .fillColor('#FFFFFF').fillOpacity(0.9).fill();
+    doc.restore();
+  }
 
   const logoSize   = 44;
   const logoOffset = drawLogo(doc, logoSource, MARGIN, (HEADER_H - logoSize) / 2, logoSize);
   const compX      = MARGIN + logoOffset;
 
-  doc.fillColor(white).fontSize(26).font('Helvetica-Bold')
+  doc.fillColor(backgroundSource ? navy : white).fontSize(26).font('Helvetica-Bold')
      .text(settings.companyName || 'Invoicefy', compX, 20, { width: 240, lineBreak: false });
 
-  doc.font('Helvetica').fontSize(8).fillColor('#CBD5E1');
+  doc.font('Helvetica').fontSize(8).fillColor(backgroundSource ? bodyText : '#CBD5E1');
   if (settings.companyAddress) {
     doc.text(settings.companyAddress, compX, 54, { width: 240, lineBreak: false });
   }
 
   const docLabel = getDocumentLabel(invoice);
-  doc.fillColor(white).fontSize(26).font('Helvetica-Bold')
+  doc.fillColor(backgroundSource ? navy : white).fontSize(26).font('Helvetica-Bold')
      .text(docLabel, MARGIN, 28, { width: CONTENT, align: 'right', lineBreak: false });
 
   // ── 2. META ───────────────────────────────────────────────────────────────
@@ -116,6 +129,13 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   const invoiceDate = new Date(invoice.invoiceDate || invoice.createdAt);
   const dueDate     = new Date(invoiceDate.getTime() + 30 * 24 * 60 * 60 * 1000);
   const fmtDate     = (d) => d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  if (backgroundSource) {
+    doc.save()
+       .rect(PAGE_W - MARGIN - 120, META_Y - 4, 120, 56)
+       .fillColor('#FFFFFF').fillOpacity(0.7).fill();
+    doc.restore();
+  }
 
   doc.fillColor(mutedText).fontSize(8.5).font('Helvetica')
      .text(invoice.invoiceNumber,           MARGIN, META_Y,      { width: CONTENT, align: 'right', lineBreak: false })
@@ -135,13 +155,22 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   }
 
   const DIVIDER_Y = META_Y + 58;
-  doc.strokeColor(borderColor).lineWidth(0.8)
-     .moveTo(MARGIN, DIVIDER_Y).lineTo(PAGE_W - MARGIN, DIVIDER_Y).stroke();
+  if (!backgroundSource) {
+    doc.strokeColor(borderColor).lineWidth(0.8)
+       .moveTo(MARGIN, DIVIDER_Y).lineTo(PAGE_W - MARGIN, DIVIDER_Y).stroke();
+  }
 
   // ── 3. FROM / BILL TO ─────────────────────────────────────────────────────
   const INFO_Y = DIVIDER_Y + 10;
   const COL_W  = CONTENT / 2 - 10;
   const COL2_X = MARGIN + COL_W + 20;
+
+  if (backgroundSource) {
+    doc.save()
+       .rect(MARGIN - 6, INFO_Y - 6, CONTENT + 12, 74)
+       .fillColor('#FFFFFF').fillOpacity(0.9).fill();
+    doc.restore();
+  }
 
   doc.fillColor(mutedText).fontSize(7.5).font('Helvetica-Bold')
      .text('FROM',    MARGIN,  INFO_Y, { lineBreak: false })
@@ -211,9 +240,23 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   }
 
   const TH = 40;
-  doc.rect(MARGIN, TABLE_Y, CONTENT, TH).fill(tableHeaderBg);
+  if (backgroundSource) {
+    const itemsCount  = Math.max(invoice.items?.length || 1, 1);
+    const tableHeight = TH + (itemsCount * ROW_H);
+    // Draw background for entire table area
+    doc.save()
+       .rect(MARGIN, TABLE_Y, CONTENT, tableHeight)
+       .fillColor('#FFFFFF').fillOpacity(0.85).fill();
+    doc.restore();
+  }
 
-  doc.fillColor(white).fontSize(9).font('Helvetica-Bold');
+  if (!backgroundSource) {
+    doc.rect(MARGIN, TABLE_Y, CONTENT, TH).fill(tableHeaderBg);
+    doc.fillColor(white);
+  } else {
+    doc.fillColor(navy); // Use header color for text if on glass
+  }
+  doc.fontSize(9).font('Helvetica-Bold');
   cols.forEach(col => {
     const lines  = col.label.split('\n');
     const lineH  = 10;
@@ -240,7 +283,10 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
       const sgst      = cgst;
       const lineTotal = hasTax ? lineBase + cgst + sgst : lineBase;
 
-      if (i % 2 === 0) doc.rect(MARGIN, rowY, CONTENT, ROW_H).fill('#F8FAFC');
+      if (i % 2 === 0 && !backgroundSource) doc.rect(MARGIN, rowY, CONTENT, ROW_H).fill('#F8FAFC');
+      else if (i % 2 === 0 && backgroundSource) {
+        doc.save().rect(MARGIN, rowY, CONTENT, ROW_H).fillColor('#FFFFFF').fillOpacity(0.3).fill().restore();
+      }
 
       // PDFKit places text from the top of the cap-height; add 3px extra to visually center
       const textY = rowY + (ROW_H - 9) / 2 - 2;
@@ -296,8 +342,14 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
 
   const drawTotRow = (label, value, highlight) => {
     if (highlight) {
-      doc.rect(TOT_X - 8, totY - 5, TOT_W + 8, 26).fill(totalRowBg);
-      doc.fillColor(white).fontSize(11).font('Helvetica-Bold')
+      if (!backgroundSource) {
+        doc.rect(TOT_X - 8, totY - 5, TOT_W + 8, 26).fill(totalRowBg);
+        doc.fillColor(white);
+      } else {
+        doc.save().rect(TOT_X - 8, totY - 5, TOT_W + 8, 26).fillColor('#FFFFFF').fillOpacity(0.5).fill().restore();
+        doc.fillColor(navy);
+      }
+      doc.fontSize(11).font('Helvetica-Bold')
          .text(label, TOT_X,     totY, { width: 100,       align: 'left',  lineBreak: false })
          .text(value, TOT_X - 4, totY, { width: TOT_W - 4, align: 'right', lineBreak: false });
     } else {
@@ -340,6 +392,13 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
     const BD_W = TOT_X - MARGIN - 16;
     let   bdY  = BLOCK_Y;
 
+    if (backgroundSource) {
+      doc.save()
+         .rect(BD_X - 4, bdY - 4, BD_W + 8, 120) // assumed height
+         .fillColor('#FFFFFF').fillOpacity(0.7).fill();
+      doc.restore();
+    }
+
     doc.fillColor(accent).fontSize(11).font('Helvetica-Bold')
        .text('PAYMENT DETAILS', BD_X, bdY, { lineBreak: false });
     bdY += 18;
@@ -369,6 +428,13 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   const SIG_BODY_Y  = FOOTER_TOP - 70;       // 70px above footer = comfortable gap
 
   // Top border line for signature zone
+  if (backgroundSource) {
+    doc.save()
+       .rect(SIG_X - 4, SIG_BODY_Y - 4, SIG_W + 8, 64)
+       .fillColor('#FFFFFF').fillOpacity(0.8).fill();
+    doc.restore();
+  }
+
   doc.strokeColor(borderColor).lineWidth(0.8)
      .moveTo(SIG_X, SIG_BODY_Y).lineTo(SIG_X + SIG_W, SIG_BODY_Y).stroke();
 
@@ -386,9 +452,14 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   const FOOTER_H = 36;
   const FOOTER_Y = PAGE_H - FOOTER_H;
 
-  doc.rect(0, FOOTER_Y, PAGE_W, FOOTER_H).fill(navy);
+  if (!backgroundSource) {
+    doc.rect(0, FOOTER_Y, PAGE_W, FOOTER_H).fill(navy);
+    doc.fillColor('#CBD5E1');
+  } else {
+    doc.fillColor(navy);
+  }
 
-  doc.fillColor('#CBD5E1').fontSize(8).font('Helvetica')
+  doc.fontSize(8).font('Helvetica')
      .text(
        invoice.disclaimer || 'Payment expected within 45 days from invoice date.',
        MARGIN, FOOTER_Y + 12,
@@ -397,7 +468,7 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
 };
 
 // ─── Template wrappers ────────────────────────────────────────────────────────
-const renderClassic = (doc, invoice, client, settings, watermark, logoSource) =>
+const renderClassic = (doc, invoice, client, settings, watermark, logoSource, backgroundSource) =>
   renderInvoiceLayout(doc, invoice, client, settings, watermark, logoSource, {
     navy:          settings.headerColor,
     accent:        settings.accentColor,
@@ -407,9 +478,9 @@ const renderClassic = (doc, invoice, client, settings, watermark, logoSource) =>
     borderColor:   '#E2E8F0',
     tableHeaderBg: settings.headerColor,
     totalRowBg:    settings.headerColor,
-  });
+  }, backgroundSource);
 
-const renderMinimal = (doc, invoice, client, settings, watermark, logoSource) =>
+const renderMinimal = (doc, invoice, client, settings, watermark, logoSource, backgroundSource) =>
   renderInvoiceLayout(doc, invoice, client, settings, watermark, logoSource, {
     navy:          settings.headerColor,
     accent:        settings.accentColor,
@@ -419,9 +490,9 @@ const renderMinimal = (doc, invoice, client, settings, watermark, logoSource) =>
     borderColor:   '#D1D5DB',
     tableHeaderBg: settings.headerColor,
     totalRowBg:    settings.headerColor,
-  });
+  }, backgroundSource);
 
-const renderBold = (doc, invoice, client, settings, watermark, logoSource) =>
+const renderBold = (doc, invoice, client, settings, watermark, logoSource, backgroundSource) =>
   renderInvoiceLayout(doc, invoice, client, settings, watermark, logoSource, {
     navy:          settings.headerColor,
     accent:        settings.accentColor,
@@ -431,7 +502,7 @@ const renderBold = (doc, invoice, client, settings, watermark, logoSource) =>
     borderColor:   '#CBD5E1',
     tableHeaderBg: settings.headerColor,
     totalRowBg:    settings.headerColor,
-  });
+  }, backgroundSource);
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
 exports.generatePDF = async (invoice, client, res, template = 'classic', watermark = '', assetBaseUrl = '') => {
@@ -446,8 +517,11 @@ exports.generatePDF = async (invoice, client, res, template = 'classic', waterma
     layout:        'portrait',
   });
 
-  const settings   = getTemplateSettings(invoice, template);
-  const logoSource = await getLogoSource(settings, assetBaseUrl);
+  const settings         = getTemplateSettings(invoice, template);
+  const logoSource       = await getAssetSource(settings.logoUrl, assetBaseUrl);
+  const backgroundSource = (template === 'custom' && settings.customTemplateUrl)
+    ? await getAssetSource(settings.customTemplateUrl, assetBaseUrl)
+    : null;
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', 'attachment; filename=' + invoice.invoiceNumber + '.pdf');
@@ -457,9 +531,9 @@ exports.generatePDF = async (invoice, client, res, template = 'classic', waterma
   doc.addPage({ size: 'A4', margin: 0 });
 
   // Render the invoice layout
-  if      (template === 'minimal') renderMinimal(doc, invoice, client, settings, watermark, logoSource);
-  else if (template === 'bold')    renderBold   (doc, invoice, client, settings, watermark, logoSource);
-  else                             renderClassic(doc, invoice, client, settings, watermark, logoSource);
+  if      (template === 'minimal') renderMinimal(doc, invoice, client, settings, watermark, logoSource, backgroundSource);
+  else if (template === 'bold')    renderBold   (doc, invoice, client, settings, watermark, logoSource, backgroundSource);
+  else                             renderClassic(doc, invoice, client, settings, watermark, logoSource, backgroundSource);
 
   // Safety: if any content somehow triggered extra pages, keep only page 0
   const range = doc.bufferedPageRange();

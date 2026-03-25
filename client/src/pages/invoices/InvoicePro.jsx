@@ -66,6 +66,11 @@ const InvoicePro = () => {
         : null;
       const businessLogoPreview = biz.logoAssetUrl || getAssetUrl(businessLogoUrl) || null;
 
+      const customTemplateUrl = typeof biz.customTemplateUrl === 'string' && biz.customTemplateUrl.startsWith('/uploads/')
+        ? biz.customTemplateUrl
+        : null;
+      const customTemplatePreview = biz.customTemplateAssetUrl || getAssetUrl(customTemplateUrl) || null;
+
       setSettings(prev => ({
         ...prev,
         companyName: prev.companyName || biz.name || '',
@@ -73,6 +78,8 @@ const InvoicePro = () => {
         companyAddress: prev.companyAddress || biz.address || '',
         logoUrl: businessLogoUrl,
         logoPreview: prev.logoUrl === businessLogoUrl ? (prev.logoPreview || businessLogoPreview) : businessLogoPreview,
+        customTemplateUrl: prev.customTemplateUrl || customTemplateUrl,
+        customTemplatePreview: prev.customTemplateUrl === customTemplateUrl ? (prev.customTemplatePreview || customTemplatePreview) : customTemplatePreview,
       }));
       if (biz.gstNumber) setForm(f => ({ ...f, yourGST: biz.gstNumber }));
     } catch {
@@ -139,6 +146,7 @@ const InvoicePro = () => {
           compactMode: settings.compactMode,
           showRowDividers: settings.showRowDividers,
           logoUrl: settings.logoUrl,
+          customTemplateUrl: settings.customTemplateUrl,
         },
       });
       toast.success(`${form.documentType === 'quotation' ? 'Quotation' : 'Invoice'} created!`);

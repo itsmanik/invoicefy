@@ -4,7 +4,7 @@ const Invoice = require('./invoice.model');
 const Client  = require('../clients/client.model');
 const { generatePDF } = require('../pdf-service/pdf.generator');
 
-const VALID_TEMPLATES = ['classic', 'minimal', 'bold'];
+const VALID_TEMPLATES = ['classic', 'minimal', 'bold', 'custom'];
 const VALID_DOCUMENT_TYPES = ['invoice', 'quotation'];
 
 const getNextDocumentNumber = async (businessId, documentType) => {
@@ -68,6 +68,7 @@ const sanitizeTemplateSettings = (template, settings = {}) => {
     companyEmail: String(value.companyEmail || '').trim().slice(0, 120),
     companyAddress: String(value.companyAddress || '').trim().slice(0, 240),
     logoUrl: /^\/uploads\/[A-Za-z0-9._-]+$/.test(value.logoUrl || '') ? value.logoUrl : '',
+    customTemplateUrl: /^\/uploads\/[A-Za-z0-9._-]+$/.test(value.customTemplateUrl || '') ? value.customTemplateUrl : '',
     headerColor: /^#[0-9A-Fa-f]{6}$/.test(value.headerColor || '') ? value.headerColor : fallback.headerColor,
     accentColor: /^#[0-9A-Fa-f]{6}$/.test(value.accentColor || '') ? value.accentColor : fallback.accentColor,
     compactMode: Boolean(value.compactMode),
@@ -274,9 +275,20 @@ exports.downloadInvoice = async (req, res) => {
     const client = await Client.findOne({
       where: { id: invoice.clientId, businessId }
     });
+    
+    const Business = require('../businesses/business.model');
+    const business = await Business.findByPk(businessId);
 
     const forwardedProto = req.get('x-forwarded-proto');
     const assetBaseUrl = `${forwardedProto || req.protocol}://${req.get('host')}`;
+
+    // Pass business profile template URL as fallback if invoice lack it
+    if (invoice.template === 'custom' && (!invoice.templateSettings || !invoice.templateSettings.customTemplateUrl)) {
+      invoice.templateSettings = {
+        ...(invoice.templateSettings || {}),
+        customTemplateUrl: business.customTemplateUrl
+      };
+    }
 
     return await generatePDF(
       invoice,

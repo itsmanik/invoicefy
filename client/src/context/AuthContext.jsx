@@ -13,6 +13,7 @@ const normalizeBusiness = (business) => {
     ...business,
     logoUrl: rawLogoUrl,
     logoAssetUrl: getAssetUrl(rawLogoUrl),
+    customTemplateAssetUrl: getAssetUrl(business.customTemplateUrl),
   };
 };
 

@@ -58,6 +58,9 @@ export const businessAPI = {
   uploadLogo: (formData) => api.post('/businesses/logo', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
+  uploadTemplate: (formData) => api.post('/businesses/template', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
 };
 
 // Clients APIs

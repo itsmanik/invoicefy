@@ -36,4 +36,19 @@ router.post('/logo', requireAuth, upload.single('logo'), async (req, res) => {
     }
 });
 
+// POST /api/businesses/template
+router.post('/template', requireAuth, upload.single('template'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+        const customTemplateUrl = `/uploads/${req.file.filename}`;
+        const Business = require('./business.model');
+        const business = await Business.findByPk(req.user.businessId);
+        if (!business) return res.status(404).json({ success: false, message: 'Business not found' });
+        await business.update({ customTemplateUrl });
+        return res.status(200).json({ success: true, customTemplateUrl });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router;

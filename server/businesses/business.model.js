@@ -31,6 +31,10 @@ const Business = sequelize.define('Business', {
   logoUrl: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  customTemplateUrl: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 }, {
   tableName: 'businesses',

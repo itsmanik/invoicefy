@@ -1,6 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { XMarkIcon, Cog6ToothIcon, BuildingOfficeIcon, SwatchIcon, CreditCardIcon, AdjustmentsHorizontalIcon, UserGroupIcon, PlusIcon, CloudArrowUpIcon } from '@heroicons/react/24/outline';
 
+import { businessAPI } from '../services/api';
+import toast from 'react-hot-toast';
+
 const PRESET_TEMPLATES = [
   { id: 'classic', label: 'Classic', description: 'Blue business invoice with GST and totals.', header: '#2563EB', accent: '#1d4ed8' },
   { id: 'minimal', label: 'Minimal', description: 'Clean monochrome invoice for a simple look.', header: '#111827', accent: '#6B7280' },
@@ -19,6 +22,7 @@ export default function InvoiceSettingsModal({ open, onClose, settings, onChange
   const [tab, setTab] = useState('company');
   const [newClient, setNewClient] = useState({ name: '', email: '', phone: '', address: '' });
   const logoInputRef = useRef();
+  const templateInputRef = useRef();
 
   if (!open) return null;
 
@@ -30,6 +34,42 @@ export default function InvoiceSettingsModal({ open, onClose, settings, onChange
     const reader = new FileReader();
     reader.onload = (ev) => onChange({ ...settings, logoPreview: ev.target.result, logoFile: file });
     reader.readAsDataURL(file);
+  };
+  
+  const handleTemplateFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    let localPreview = '';
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      localPreview = ev.target.result;
+      onChange({ ...settings, customTemplatePreview: localPreview, templateId: 'custom' });
+    };
+    reader.readAsDataURL(file);
+
+    // Upload
+    const formData = new FormData();
+    formData.append('template', file);
+    const toastId = toast.loading('Uploading template...');
+    try {
+      const res = await businessAPI.uploadTemplate(formData);
+      const biz = JSON.parse(localStorage.getItem('business') || '{}');
+      localStorage.setItem('business', JSON.stringify({ ...biz, customTemplateUrl: res.data.customTemplateUrl }));
+      
+      // Update with BOTH the server URL and the local preview to avoid flickering
+      onChange({ 
+        ...settings, 
+        customTemplateUrl: res.data.customTemplateUrl, 
+        customTemplatePreview: localPreview || settings.customTemplatePreview,
+        templateId: 'custom' 
+      });
+      toast.success('Template uploaded and applied!', { id: toastId });
+    } catch (err) {
+      toast.error('Failed to upload template.', { id: toastId });
+    } finally {
+      e.target.value = ''; // Allow re-selecting the same file
+    }
   };
 
   const handleAddClient = () => {
@@ -162,6 +202,62 @@ export default function InvoiceSettingsModal({ open, onClose, settings, onChange
                     </div>
                   </button>
                 ))}
+              </div>
+
+              {/* Upload Template from Device */}
+              <div className="border border-slate-200 rounded-xl p-4 bg-white space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-800">Upload from Device</h4>
+                    <p className="text-xs text-slate-500 mt-0.5 font-medium">Use a custom image/design as your invoice background.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => templateInputRef.current?.click()}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-all shadow-sm active:scale-95"
+                  >
+                    <CloudArrowUpIcon className="h-4 w-4" />
+                    <span>{settings.customTemplateUrl ? 'Change Design' : 'Upload Template'}</span>
+                  </button>
+                  <input
+                    ref={templateInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleTemplateFile}
+                  />
+                </div>
+                
+                {settings.customTemplatePreview && (
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="relative group">
+                      <img
+                        src={settings.customTemplatePreview}
+                        alt="custom template"
+                        className="h-12 w-12 object-cover rounded-lg border border-slate-200"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                        <SwatchIcon className="h-4 w-4 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-700 truncate">Your Custom Template</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onChange({
+                            ...settings,
+                            templateId: 'custom',
+                            // Keep background but set it as active
+                          });
+                        }}
+                        className={`mt-1 text-[10px] font-bold uppercase tracking-wider ${activeTemplate === 'custom' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                      >
+                        {activeTemplate === 'custom' ? '✓ Currently Active' : 'Apply this template'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-4">
