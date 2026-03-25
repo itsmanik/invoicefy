@@ -51,10 +51,13 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
   const total       = taxable + taxAmt;
 
   // ── Template colours (same defaults as pdf.generator.js) ────────────────
+  // Settings modal stores colors as tableColor / primaryColor.
+  // Fall back to headerColor / accentColor for backwards compatibility,
+  // then to per-template defaults if nothing is set.
   const template    = settings.templateId || 'classic';
-  const navy        = settings.headerColor ||
+  const navy        = settings.tableColor   || settings.headerColor ||
     (template === 'minimal' ? '#111827' : template === 'bold' ? '#1E293B' : '#2563EB');
-  const accent      = settings.accentColor ||
+  const accent      = settings.primaryColor || settings.accentColor ||
     (template === 'minimal' ? '#6B7280' : template === 'bold' ? '#F59E0B' : '#1d4ed8');
 
   const documentType  = form.documentType || 'invoice';
@@ -95,17 +98,6 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
   const thAlign = { left: 'text-left', center: 'text-center', right: 'text-right' };
 
   return (
-    /*
-     * Outer wrapper — mimics A4 paper proportions in a scrollable preview box.
-     * Everything inside uses the exact same structure order as pdf.generator.js:
-     *   1. Header bar
-     *   2. Meta row (invoice no / dates)
-     *   3. Divider
-     *   4. FROM / BILL TO
-     *   5. Items table (straight rect header, no border-radius)
-     *   6. Totals + Bank side by side
-     *   7. Footer bar with signature inside
-     */
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-inner text-[9px] text-slate-800 font-sans">
 
       {/* ── 1. HEADER BAR ─────────────────────────────────────────────── */}
@@ -256,7 +248,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       {/* ── 6. TOTALS + BANK SIDE BY SIDE ────────────────────────────── */}
       <div className="flex gap-3 px-5 pt-7 pb-3 items-start">
 
-        {/* LEFT: Bank / Payment details — no border box */}
+        {/* LEFT: Bank / Payment details */}
         {hasBD && (
           <div className="flex-1 min-w-0">
             <div className="text-[8.5px] font-bold mb-1.5" style={{ color: accent }}>
@@ -272,9 +264,8 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
         )}
         {!hasBD && <div className="flex-1" />}
 
-        {/* RIGHT: Totals box — solid border, no border-radius */}
+        {/* RIGHT: Totals box */}
         <div className="shrink-0" style={{ width: 200, border: '1px solid #E2E8F0', padding: '6px 8px' }}>
-          {/* Subtotal rows */}
           <div className="space-y-1 mb-1">
             {hasTax ? (
               <>
@@ -326,7 +317,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
         </div>
       </div>
 
-      {/* ── 6b. SIGNATURE BLOCK — in body, right-aligned, with space above footer */}
+      {/* ── 6b. SIGNATURE BLOCK ── */}
       <div className="px-5 pb-4 flex justify-end" style={{ minHeight: 80 }}>
         <div
           className="text-center"
@@ -349,7 +340,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
         </div>
       </div>
 
-      {/* ── 7. FOOTER BAR — disclaimer only, no signature ────────────── */}
+      {/* ── 7. FOOTER BAR ────────────────────────────────────────────── */}
       <div
         className="px-5 flex items-center justify-center"
         style={{ background: navy, minHeight: 32 }}
