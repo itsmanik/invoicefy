@@ -116,16 +116,11 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
             <img src={logoSrc} alt="logo" className="h-10 w-10 object-contain rounded" />
           )}
           <div>
-            <div className="text-[15px] font-bold text-white leading-tight">
+            <div className="text-[20px] font-bold text-white leading-tight">
               {settings.companyName || 'Invoicefy'}
             </div>
-            {form.yourGST && (
-              <div className="text-[8px] mt-0.5" style={{ color: '#CBD5E1' }}>
-                GSTIN: {form.yourGST}
-              </div>
-            )}
             {settings.companyAddress && (
-              <div className="text-[8px]" style={{ color: '#CBD5E1' }}>
+              <div className="text-[8px] mt-1" style={{ color: '#CBD5E1' }}>
                 {settings.companyAddress}
               </div>
             )}
@@ -198,19 +193,15 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
         </div>
       </div>
 
-      {/* ── 5. ITEMS TABLE — straight rect header, NO border-radius ───── */}
-      <div className="mx-5 mt-3">
-        {/* Header row: plain background, no rounded corners */}
+      {/* ── 5. ITEMS TABLE ───────────────────────────────────────────── */}
+      <div className="mx-5 mt-3" style={{ border: '1px solid #E2E8F0' }}>
+        {/* Header row */}
         <div
           className="flex text-white text-[8.5px] font-bold"
-          style={{ background: navy, padding: '6px 8px' }}
+          style={{ background: navy, padding: '12px 8px' }}
         >
           {cols.map((col, ci) => (
-            <div
-              key={ci}
-              style={{ flex: col.flex }}
-              className={thAlign[col.align]}
-            >
+            <div key={ci} style={{ flex: col.flex }} className={thAlign[col.align]}>
               {col.label.split('\n').map((l, li) => <div key={li}>{l}</div>)}
             </div>
           ))}
@@ -230,9 +221,9 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
           return (
             <div
               key={idx}
-              className="flex text-[8.5px] text-slate-700"
+              className="flex items-center text-[8.5px] text-slate-700"
               style={{
-                padding: '5px 8px',
+                padding: '12px 8px',
                 background: idx % 2 === 0 ? '#F8FAFC' : '#FFFFFF',
                 borderBottom: showDividers ? '1px solid #E2E8F0' : 'none',
               }}
@@ -263,9 +254,9 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       </div>
 
       {/* ── 6. TOTALS + BANK SIDE BY SIDE ────────────────────────────── */}
-      <div className="flex gap-3 px-5 pt-4 pb-3 items-start">
+      <div className="flex gap-3 px-5 pt-7 pb-3 items-start">
 
-        {/* LEFT: Bank / Payment details */}
+        {/* LEFT: Bank / Payment details — no border box */}
         {hasBD && (
           <div className="flex-1 min-w-0">
             <div className="text-[8.5px] font-bold mb-1.5" style={{ color: accent }}>
@@ -281,8 +272,8 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
         )}
         {!hasBD && <div className="flex-1" />}
 
-        {/* RIGHT: Totals box — plain rect, NO border-radius, wider */}
-        <div className="shrink-0" style={{ width: 200 }}>
+        {/* RIGHT: Totals box — solid border, no border-radius */}
+        <div className="shrink-0" style={{ width: 200, border: '1px solid #E2E8F0', padding: '6px 8px' }}>
           {/* Subtotal rows */}
           <div className="space-y-1 mb-1">
             {hasTax ? (
@@ -324,51 +315,47 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
           {/* Thin separator */}
           <div className="border-t border-slate-200 mb-1" />
 
-          {/* GRAND TOTAL — plain rect (no border-radius), full width */}
+          {/* GRAND TOTAL */}
           <div
-            className="flex justify-between items-center px-2 text-white font-bold text-[10px]"
+            className="flex justify-between items-center text-white font-bold text-[10px]"
             style={{ background: navy, padding: '5px 8px' }}
           >
             <span>GRAND TOTAL</span>
             <span>{fmt(total)}</span>
           </div>
-
-          {/* Amount in words */}
-          <div className="text-[7px] italic text-slate-400 mt-1.5 px-1">
-            Rupees {numberToWords(total)}
-          </div>
         </div>
       </div>
 
-      {/* ── 7. FOOTER BAR with signature inside (right side) ─────────── */}
-      <div
-        className="flex items-center justify-between px-5 mt-2"
-        style={{ background: navy, minHeight: 48 }}
-      >
-        {/* Disclaimer text */}
-        <div className="text-[7.5px] text-center flex-1 pr-4" style={{ color: '#CBD5E1' }}>
-          {form.disclaimer ||
-            'Payment expected within 45 days from invoice date. Invoice will not be valid after 45 days.'}
-        </div>
-
-        {/* Signature block inside footer */}
+      {/* ── 6b. SIGNATURE BLOCK — in body, right-aligned, with space above footer */}
+      <div className="px-5 pb-4 flex justify-end" style={{ minHeight: 80 }}>
         <div
-          className="shrink-0 text-center"
+          className="text-center"
           style={{
-            width: 150,
-            borderLeft: '1px solid #4B6488',
-            paddingLeft: 10,
+            width: 160,
+            borderTop: `1px solid #E2E8F0`,
+            paddingTop: 8,
+            marginTop: 'auto',
           }}
         >
-          <div className="text-[9.5px] font-bold text-white leading-tight">
+          <div className="text-[9.5px] font-bold leading-tight" style={{ color: navy }}>
             {settings.companyName || 'Invoicefy'}
           </div>
-          <div className="text-[7.5px] mt-0.5" style={{ color: '#94A3B8' }}>
+          <div className="text-[7.5px] mt-1 text-slate-400">
             Authorized Signatory
           </div>
           <div className="text-[7px] mt-0.5" style={{ color: accent }}>
             For {settings.companyName || 'Invoicefy'}
           </div>
+        </div>
+      </div>
+
+      {/* ── 7. FOOTER BAR — disclaimer only, no signature ────────────── */}
+      <div
+        className="px-5 flex items-center justify-center"
+        style={{ background: navy, minHeight: 32 }}
+      >
+        <div className="text-[7.5px] text-center" style={{ color: '#CBD5E1' }}>
+          {form.disclaimer || 'Payment expected within 45 days from invoice date.'}
         </div>
       </div>
 

@@ -6,8 +6,6 @@ const PDFDocument = require('pdfkit');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// PDFKit's built-in Helvetica does NOT support the Unicode ₹ glyph — it renders
-// as a box or a "1". Use the ASCII fallback "Rs." for reliable output.
 const formatCurr = (num) =>
   'Rs.' + Number(num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -84,14 +82,14 @@ const drawLogo = (doc, logoSource, x, y, size) => {
   } catch { return 0; }
 };
 
-// ─── SINGLE UNIFIED LAYOUT (one page, all templates share this) ───────────────
+// ─── SINGLE UNIFIED LAYOUT (forced to exactly ONE page) ──────────────────────
 const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSource, colors) => {
   const { navy, accent, white, bodyText, mutedText, borderColor, tableHeaderBg, totalRowBg } = colors;
 
   const PAGE_W  = 595;
   const PAGE_H  = 842;
   const MARGIN  = 36;
-  const CONTENT = PAGE_W - MARGIN * 2;   // 523
+  const CONTENT = PAGE_W - MARGIN * 2;
 
   // ── 1. HEADER ────────────────────────────────────────────────────────────
   const HEADER_H = 90;
@@ -101,31 +99,30 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   const logoOffset = drawLogo(doc, logoSource, MARGIN, (HEADER_H - logoSize) / 2, logoSize);
   const compX      = MARGIN + logoOffset;
 
-  doc.fillColor(white).fontSize(18).font('Helvetica-Bold')
-     .text(settings.companyName || 'Invoicefy', compX, 16, { width: 240, lineBreak: false });
+  doc.fillColor(white).fontSize(26).font('Helvetica-Bold')
+     .text(settings.companyName || 'Invoicefy', compX, 20, { width: 240, lineBreak: false });
 
-  let hY = 38;
   doc.font('Helvetica').fontSize(8).fillColor('#CBD5E1');
-  if (invoice.yourGST) { doc.text('GSTIN: ' + invoice.yourGST, compX, hY, { width: 240 }); hY += 12; }
-  if (settings.companyAddress) { doc.text(settings.companyAddress, compX, hY, { width: 240 }); }
+  if (settings.companyAddress) {
+    doc.text(settings.companyAddress, compX, 54, { width: 240, lineBreak: false });
+  }
 
   const docLabel = getDocumentLabel(invoice);
   doc.fillColor(white).fontSize(26).font('Helvetica-Bold')
-     .text(docLabel, MARGIN, 28, { width: CONTENT, align: 'right' });
+     .text(docLabel, MARGIN, 28, { width: CONTENT, align: 'right', lineBreak: false });
 
-  // ── 2. META (invoice no / dates) ─────────────────────────────────────────
+  // ── 2. META ───────────────────────────────────────────────────────────────
   const META_Y      = HEADER_H + 8;
   const invoiceDate = new Date(invoice.invoiceDate || invoice.createdAt);
   const dueDate     = new Date(invoiceDate.getTime() + 30 * 24 * 60 * 60 * 1000);
   const fmtDate     = (d) => d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
   doc.fillColor(mutedText).fontSize(8.5).font('Helvetica')
-     .text(invoice.invoiceNumber,           MARGIN, META_Y,      { width: CONTENT, align: 'right' })
-     .text('Date: ' + fmtDate(invoiceDate), MARGIN, META_Y + 12, { width: CONTENT, align: 'right' });
+     .text(invoice.invoiceNumber,           MARGIN, META_Y,      { width: CONTENT, align: 'right', lineBreak: false })
+     .text('Date: ' + fmtDate(invoiceDate), MARGIN, META_Y + 12, { width: CONTENT, align: 'right', lineBreak: false });
   doc.fillColor(accent).font('Helvetica-Bold')
-     .text('Due: '  + fmtDate(dueDate),     MARGIN, META_Y + 24, { width: CONTENT, align: 'right' });
+     .text('Due: ' + fmtDate(dueDate),      MARGIN, META_Y + 24, { width: CONTENT, align: 'right', lineBreak: false });
 
-  // Watermark badge
   if (watermark) {
     doc.save();
     doc.fontSize(8.5).font('Helvetica-Bold');
@@ -134,10 +131,9 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
        .fillColor(accent).fillOpacity(0.15).fill();
     doc.restore();
     doc.fillColor(accent).fontSize(8.5).font('Helvetica-Bold')
-       .text(watermark.toUpperCase(), PAGE_W - MARGIN - bW, META_Y + 41, { width: bW, align: 'center' });
+       .text(watermark.toUpperCase(), PAGE_W - MARGIN - bW, META_Y + 41, { width: bW, align: 'center', lineBreak: false });
   }
 
-  // Divider
   const DIVIDER_Y = META_Y + 58;
   doc.strokeColor(borderColor).lineWidth(0.8)
      .moveTo(MARGIN, DIVIDER_Y).lineTo(PAGE_W - MARGIN, DIVIDER_Y).stroke();
@@ -148,45 +144,43 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   const COL2_X = MARGIN + COL_W + 20;
 
   doc.fillColor(mutedText).fontSize(7.5).font('Helvetica-Bold')
-     .text('FROM', MARGIN, INFO_Y)
-     .text('BILL TO', COL2_X, INFO_Y);
+     .text('FROM',    MARGIN,  INFO_Y, { lineBreak: false })
+     .text('BILL TO', COL2_X, INFO_Y, { lineBreak: false });
 
   doc.strokeColor(borderColor).lineWidth(0.4)
      .moveTo(COL2_X - 10, INFO_Y).lineTo(COL2_X - 10, INFO_Y + 62).stroke();
 
-  // FROM
   doc.fillColor(navy).fontSize(11).font('Helvetica-Bold')
-     .text(settings.companyName || 'Invoicefy', MARGIN, INFO_Y + 12, { width: COL_W });
+     .text(settings.companyName || 'Invoicefy', MARGIN, INFO_Y + 12, { width: COL_W, lineBreak: false });
   let fromY = INFO_Y + 26;
   if (invoice.yourGST) {
     doc.fillColor(bodyText).fontSize(8.5).font('Helvetica-Bold')
-       .text('GST: ' + invoice.yourGST, MARGIN, fromY, { width: COL_W });
+       .text('GST: ' + invoice.yourGST, MARGIN, fromY, { width: COL_W, lineBreak: false });
     fromY += 12;
   }
   if (settings.companyAddress) {
     doc.fillColor(mutedText).fontSize(8.5).font('Helvetica')
-       .text(settings.companyAddress, MARGIN, fromY, { width: COL_W });
+       .text(settings.companyAddress, MARGIN, fromY, { width: COL_W, lineBreak: false });
   }
 
-  // BILL TO
   doc.fillColor(navy).fontSize(11).font('Helvetica-Bold')
-     .text(client ? client.name : 'N/A', COL2_X, INFO_Y + 12, { width: COL_W });
+     .text(client ? client.name : 'N/A', COL2_X, INFO_Y + 12, { width: COL_W, lineBreak: false });
   let toY = INFO_Y + 26;
   const clientGst = invoice.clientGST || (client && client.gstNumber);
   if (clientGst) {
     doc.fillColor(bodyText).fontSize(8.5).font('Helvetica-Bold')
-       .text('GST: ' + clientGst, COL2_X, toY, { width: COL_W });
+       .text('GST: ' + clientGst, COL2_X, toY, { width: COL_W, lineBreak: false });
     toY += 12;
   }
   const addrParts = [client && client.address, client && client.email, client && client.phone].filter(Boolean);
   if (addrParts.length) {
     doc.fillColor(mutedText).fontSize(8.5).font('Helvetica')
-       .text(addrParts.join('  |  '), COL2_X, toY, { width: COL_W });
+       .text(addrParts.join('  |  '), COL2_X, toY, { width: COL_W, lineBreak: false });
   }
 
   // ── 4. ITEMS TABLE ────────────────────────────────────────────────────────
   const TABLE_Y = INFO_Y + 78;
-  const ROW_H   = 22;   // compact fixed height — keeps content on one page
+  const ROW_H   = 36;
 
   const hasTax     = Number(invoice.tax) > 0;
   const taxableAmt = Number(invoice.subtotal) - (Number(invoice.subtotal) * Number(invoice.discount || 0) / 100);
@@ -194,29 +188,29 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
     ? Math.round((Number(invoice.tax) / taxableAmt) * 100) : 0;
   const halfTax    = taxPercent / 2;
 
-  // Columns — plain straight rect, NO border-radius on table header
   let cols;
+  
+  // Defined exact column widths and border placement
   if (hasTax) {
     cols = [
-      { label: 'Description',           x: MARGIN,       w: 148, align: 'left'   },
-      { label: 'SAC',                    x: MARGIN + 151, w: 40,  align: 'center' },
-      { label: 'Taxable',               x: MARGIN + 194, w: 76,  align: 'right'  },
-      { label: 'CGST\n' + halfTax + '%', x: MARGIN + 273, w: 62,  align: 'right'  },
-      { label: 'SGST\n' + halfTax + '%', x: MARGIN + 338, w: 62,  align: 'right'  },
-      { label: 'Total',                  x: MARGIN + 403, w: 80,  align: 'right'  },
+      { label: 'Description',            x: MARGIN,       w: 150, align: 'center', rightBorder: MARGIN + 150 },
+      { label: 'SAC',                    x: MARGIN + 150, w: 44,  align: 'center', rightBorder: MARGIN + 194 },
+      { label: 'Taxable',                x: MARGIN + 194, w: 78,  align: 'center', rightBorder: MARGIN + 272 },
+      { label: 'CGST\n' + halfTax + '%', x: MARGIN + 272, w: 64,  align: 'center', rightBorder: MARGIN + 336 },
+      { label: 'SGST\n' + halfTax + '%', x: MARGIN + 336, w: 64,  align: 'center', rightBorder: MARGIN + 400 },
+      { label: 'Total',                  x: MARGIN + 400, w: 123, align: 'center', rightBorder: null }, // no right border for last col
     ];
   } else {
     cols = [
-      { label: 'Description', x: MARGIN,       w: 200, align: 'left'   },
-      { label: 'SAC',         x: MARGIN + 203, w: 46,  align: 'center' },
-      { label: 'Qty',         x: MARGIN + 252, w: 44,  align: 'center' },
-      { label: 'Unit Price',  x: MARGIN + 299, w: 96,  align: 'right'  },
-      { label: 'Total',       x: MARGIN + 398, w: 85,  align: 'right'  },
+      { label: 'Description', x: MARGIN,       w: 202, align: 'center', rightBorder: MARGIN + 202 },
+      { label: 'SAC',         x: MARGIN + 202, w: 48,  align: 'center', rightBorder: MARGIN + 250 },
+      { label: 'Qty',         x: MARGIN + 250, w: 48,  align: 'center', rightBorder: MARGIN + 298 },
+      { label: 'Unit Price',  x: MARGIN + 298, w: 100, align: 'center', rightBorder: MARGIN + 398 },
+      { label: 'Total',       x: MARGIN + 398, w: 125, align: 'center', rightBorder: null },
     ];
   }
 
-  // Table header — plain rect, NO rounded corners
-  const TH = 28;
+  const TH = 40;
   doc.rect(MARGIN, TABLE_Y, CONTENT, TH).fill(tableHeaderBg);
 
   doc.fillColor(white).fontSize(9).font('Helvetica-Bold');
@@ -230,62 +224,82 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
     });
   });
 
-  // Data rows — NO addPage, everything stays on one page
   let rowY = TABLE_Y + TH;
-  (invoice.items || []).forEach((item, i) => {
-    const qty       = Number(item.quantity)  || 0;
-    const unitPrice = Number(item.unitPrice) || 0;
-    const lineBase  = qty * unitPrice;
-    const cgst      = hasTax ? lineBase * (halfTax / 100) : 0;
-    const sgst      = cgst;
-    const lineTotal = hasTax ? lineBase + cgst + sgst : lineBase;
+  const items = invoice.items || [];
 
-    if (i % 2 === 0) doc.rect(MARGIN, rowY, CONTENT, ROW_H).fill('#F8FAFC');
-
-    const textY = rowY + (ROW_H - 9) / 2;
-    doc.fillColor(bodyText).fontSize(9).font('Helvetica');
-
-    if (hasTax) {
-      doc.text(item.description,      cols[0].x, textY, { width: cols[0].w, align: 'left',   lineBreak: false });
-      doc.text(item.hsn || '-',       cols[1].x, textY, { width: cols[1].w, align: 'center', lineBreak: false });
-      doc.text(formatCurr(lineBase),  cols[2].x, textY, { width: cols[2].w, align: 'right',  lineBreak: false });
-      doc.text(formatCurr(cgst),      cols[3].x, textY, { width: cols[3].w, align: 'right',  lineBreak: false });
-      doc.text(formatCurr(sgst),      cols[4].x, textY, { width: cols[4].w, align: 'right',  lineBreak: false });
-      doc.text(formatCurr(lineTotal), cols[5].x, textY, { width: cols[5].w, align: 'right',  lineBreak: false });
-    } else {
-      doc.text(item.description + (item.hsn ? ' (' + item.hsn + ')' : ''),
-                                      cols[0].x, textY, { width: cols[0].w, align: 'left',   lineBreak: false });
-      doc.text(item.hsn || '-',       cols[1].x, textY, { width: cols[1].w, align: 'center', lineBreak: false });
-      doc.text(String(qty),           cols[2].x, textY, { width: cols[2].w, align: 'center', lineBreak: false });
-      doc.text(formatCurr(unitPrice), cols[3].x, textY, { width: cols[3].w, align: 'right',  lineBreak: false });
-      doc.text(formatCurr(lineTotal), cols[4].x, textY, { width: cols[4].w, align: 'right',  lineBreak: false });
-    }
-
+  if (items.length === 0) {
+    doc.fillColor(mutedText).fontSize(9).font('Helvetica-Oblique')
+       .text('No items added yet...', MARGIN, rowY + 8, { width: CONTENT, align: 'center', lineBreak: false });
     rowY += ROW_H;
-    if (settings.showRowDividers) {
-      doc.strokeColor(borderColor).lineWidth(0.3)
-         .moveTo(MARGIN, rowY).lineTo(PAGE_W - MARGIN, rowY).stroke();
+  } else {
+    items.forEach((item, i) => {
+      const qty       = Number(item.quantity)  || 0;
+      const unitPrice = Number(item.unitPrice) || 0;
+      const lineBase  = qty * unitPrice;
+      const cgst      = hasTax ? lineBase * (halfTax / 100) : 0;
+      const sgst      = cgst;
+      const lineTotal = hasTax ? lineBase + cgst + sgst : lineBase;
+
+      if (i % 2 === 0) doc.rect(MARGIN, rowY, CONTENT, ROW_H).fill('#F8FAFC');
+
+      // PDFKit places text from the top of the cap-height; add 3px extra to visually center
+      const textY = rowY + (ROW_H - 9) / 2 - 2;
+      doc.fillColor(bodyText).fontSize(9).font('Helvetica');
+
+      if (hasTax) {
+        doc.text(item.description,      cols[0].x, textY, { width: cols[0].w, align: 'center', lineBreak: false });
+        doc.text(item.hsn || '-',       cols[1].x, textY, { width: cols[1].w, align: 'center', lineBreak: false });
+        doc.text(formatCurr(lineBase),  cols[2].x, textY, { width: cols[2].w, align: 'center', lineBreak: false });
+        doc.text(formatCurr(cgst),      cols[3].x, textY, { width: cols[3].w, align: 'center', lineBreak: false });
+        doc.text(formatCurr(sgst),      cols[4].x, textY, { width: cols[4].w, align: 'center', lineBreak: false });
+        doc.text(formatCurr(lineTotal), cols[5].x, textY, { width: cols[5].w, align: 'center', lineBreak: false });
+      } else {
+        doc.text(item.description + (item.hsn ? ' (' + item.hsn + ')' : ''),
+                                        cols[0].x, textY, { width: cols[0].w, align: 'center', lineBreak: false });
+        doc.text(item.hsn || '-',       cols[1].x, textY, { width: cols[1].w, align: 'center', lineBreak: false });
+        doc.text(String(qty),           cols[2].x, textY, { width: cols[2].w, align: 'center', lineBreak: false });
+        doc.text(formatCurr(unitPrice), cols[3].x, textY, { width: cols[3].w, align: 'center', lineBreak: false });
+        doc.text(formatCurr(lineTotal), cols[4].x, textY, { width: cols[4].w, align: 'center', lineBreak: false });
+      }
+
+      rowY += ROW_H;
+      
+      // Horizontal row dividers
+      if (settings.showRowDividers) {
+        doc.strokeColor(borderColor).lineWidth(0.3)
+           .moveTo(MARGIN, rowY).lineTo(PAGE_W - MARGIN, rowY).stroke();
+      }
+    });
+  }
+
+  // Solid border box around the entire items table (header + rows)
+  doc.rect(MARGIN, TABLE_Y, CONTENT, rowY - TABLE_Y)
+     .strokeColor(borderColor).lineWidth(1).stroke();
+
+  // Thin vertical dividing lines for columns
+  doc.strokeColor(borderColor).lineWidth(0.3);
+  cols.forEach(col => {
+    if (col.rightBorder) {
+      doc.moveTo(col.rightBorder, TABLE_Y)
+         .lineTo(col.rightBorder, rowY)
+         .stroke();
     }
   });
 
-  // ── 5. TOTALS + BANK (side by side) ──────────────────────────────────────
-  const BLOCK_Y = rowY + 16;
-
-  // Grand Total box — wider (230px), NO border-radius, plain rect
-  const TOT_W = 230;
-  const TOT_X = MARGIN + CONTENT - TOT_W;
-  let   totY  = BLOCK_Y;
+  // ── 5. TOTALS + BANK ─────────────────────────────────────────────────────
+  const BLOCK_Y = rowY + 28;   // increased gap between table and totals/bank
+  const TOT_W   = 230;
+  const TOT_X   = MARGIN + CONTENT - TOT_W;
+  let   totY    = BLOCK_Y;
 
   const discountAmt = Number(invoice.subtotal) * (Number(invoice.discount || 0) / 100);
 
-  // Draw a regular row (label left, value right)
   const drawTotRow = (label, value, highlight) => {
     if (highlight) {
-      // Plain rect, NO rounded corners
       doc.rect(TOT_X - 8, totY - 5, TOT_W + 8, 26).fill(totalRowBg);
       doc.fillColor(white).fontSize(11).font('Helvetica-Bold')
-         .text(label, TOT_X,     totY, { width: 100,        align: 'left',  lineBreak: false })
-         .text(value, TOT_X - 4, totY, { width: TOT_W - 4,  align: 'right', lineBreak: false });
+         .text(label, TOT_X,     totY, { width: 100,       align: 'left',  lineBreak: false })
+         .text(value, TOT_X - 4, totY, { width: TOT_W - 4, align: 'right', lineBreak: false });
     } else {
       doc.fillColor(mutedText).fontSize(9).font('Helvetica')
          .text(label, TOT_X, totY, { width: 120,       align: 'left',  lineBreak: false });
@@ -299,8 +313,8 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
     drawTotRow('Taxable Amount', formatCurr(taxableAmt));
     if (Number(invoice.discount) > 0)
       drawTotRow('Discount (' + invoice.discount + '%)', '- ' + formatCurr(discountAmt));
-    drawTotRow('CGST (' + halfTax + '%)',  formatCurr(Number(invoice.tax) / 2));
-    drawTotRow('SGST (' + halfTax + '%)',  formatCurr(Number(invoice.tax) / 2));
+    drawTotRow('CGST (' + halfTax + '%)', formatCurr(Number(invoice.tax) / 2));
+    drawTotRow('SGST (' + halfTax + '%)', formatCurr(Number(invoice.tax) / 2));
   } else {
     drawTotRow('Subtotal', formatCurr(invoice.subtotal));
     if (Number(invoice.discount) > 0)
@@ -309,18 +323,16 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
       drawTotRow('Tax', '+' + formatCurr(invoice.tax));
   }
 
-  // Thin separator line above grand total
   doc.strokeColor(borderColor).lineWidth(0.7)
      .moveTo(TOT_X - 8, totY - 5).lineTo(TOT_X + TOT_W, totY - 5).stroke();
 
   drawTotRow('GRAND TOTAL', formatCurr(invoice.total), true);
 
-  // Amount in words — small gap below grand total box
-  doc.fillColor(mutedText).fontSize(7.5).font('Helvetica-Oblique')
-     .text('Rupees ' + numberToWords(invoice.total),
-           TOT_X - 8, totY + 6, { width: TOT_W + 8, align: 'left' });
+  // Solid border box around the totals block (from top to bottom of grand total row)
+  doc.rect(TOT_X - 8, BLOCK_Y - 8, TOT_W + 8, totY - BLOCK_Y + 8)
+     .strokeColor(borderColor).lineWidth(1).stroke();
 
-  // Bank details — presentable large font on left side
+  // Bank details (left side)
   const bd    = invoice.bankDetails;
   const hasBD = bd && (bd.accountName || bd.bankName || bd.accountNumber || bd.ifsc);
   if (hasBD) {
@@ -329,7 +341,7 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
     let   bdY  = BLOCK_Y;
 
     doc.fillColor(accent).fontSize(11).font('Helvetica-Bold')
-       .text('PAYMENT DETAILS', BD_X, bdY);
+       .text('PAYMENT DETAILS', BD_X, bdY, { lineBreak: false });
     bdY += 18;
 
     const bdRows = [];
@@ -340,7 +352,6 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
     if (bd.panNumber)                  bdRows.push(['PAN',           bd.panNumber]);
 
     bdRows.forEach(([label, value]) => {
-      // Large readable font — 10.5pt label, 10.5pt value bold
       doc.fillColor(mutedText).fontSize(10.5).font('Helvetica')
          .text(label + ':', BD_X, bdY, { width: 82, align: 'left', lineBreak: false });
       doc.fillColor(bodyText).fontSize(10.5).font('Helvetica-Bold')
@@ -349,88 +360,112 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
     });
   }
 
-  // ── 6. FOOTER (pinned to page bottom, same color as header) ──────────────
-  //    Signature lives INSIDE the footer bar on the right side
-  const FOOTER_H = 56;
+  // ── 6. SIGNATURE BLOCK — right side of body, with generous space below totals
+  // Sits in the blank body area, well below the "Rupees..." line
+  const SIG_W      = 180;
+  const SIG_X      = PAGE_W - MARGIN - SIG_W;
+  // Place signature near the bottom of the body area (above footer)
+  const FOOTER_TOP  = PAGE_H - 36;           // footer starts here
+  const SIG_BODY_Y  = FOOTER_TOP - 70;       // 70px above footer = comfortable gap
+
+  // Top border line for signature zone
+  doc.strokeColor(borderColor).lineWidth(0.8)
+     .moveTo(SIG_X, SIG_BODY_Y).lineTo(SIG_X + SIG_W, SIG_BODY_Y).stroke();
+
+  doc.fillColor(navy).fontSize(11).font('Helvetica-Bold')
+     .text(settings.companyName || 'Invoicefy', SIG_X, SIG_BODY_Y + 10,
+           { width: SIG_W, align: 'center', lineBreak: false });
+  doc.fillColor(mutedText).fontSize(8.5).font('Helvetica')
+     .text('Authorized Signatory', SIG_X, SIG_BODY_Y + 26,
+           { width: SIG_W, align: 'center', lineBreak: false });
+  doc.fillColor(accent).fontSize(8).font('Helvetica')
+     .text('For ' + (settings.companyName || 'Invoicefy'), SIG_X, SIG_BODY_Y + 40,
+           { width: SIG_W, align: 'center', lineBreak: false });
+
+  // ── 7. FOOTER — plain dark bar with disclaimer only ───────────────────────
+  const FOOTER_H = 36;
   const FOOTER_Y = PAGE_H - FOOTER_H;
 
-  // Footer background — same navy as header
   doc.rect(0, FOOTER_Y, PAGE_W, FOOTER_H).fill(navy);
 
-  // Disclaimer text centred in footer
   doc.fillColor('#CBD5E1').fontSize(8).font('Helvetica')
      .text(
-       invoice.disclaimer || 'Payment expected within 45 days from invoice date. Invoice will not be valid after 45 days.',
-       MARGIN, FOOTER_Y + 10, { align: 'center', width: CONTENT }
+       invoice.disclaimer || 'Payment expected within 45 days from invoice date.',
+       MARGIN, FOOTER_Y + 12,
+       { align: 'center', width: CONTENT, lineBreak: false }
      );
-
-  // Signature block — right side of footer, vertically centred
-  const SIG_W = 180;
-  const SIG_X = PAGE_W - MARGIN - SIG_W;
-
-  // Thin top separator for signature zone inside footer
-  doc.strokeColor('#4B6488').lineWidth(0.6)
-     .moveTo(SIG_X - 4, FOOTER_Y + 4).lineTo(SIG_X + SIG_W, FOOTER_Y + 4).stroke();
-
-  doc.fillColor(white).fontSize(11).font('Helvetica-Bold')
-     .text(settings.companyName || 'Invoicefy', SIG_X, FOOTER_Y + 8, { width: SIG_W, align: 'center' });
-  doc.fillColor('#94A3B8').fontSize(8.5).font('Helvetica')
-     .text('Authorized Signatory', SIG_X, FOOTER_Y + 24, { width: SIG_W, align: 'center' });
-  doc.fillColor(accent).fontSize(8).font('Helvetica')
-     .text('For ' + (settings.companyName || 'Invoicefy'), SIG_X, FOOTER_Y + 38, { width: SIG_W, align: 'center' });
 };
 
-// ─── Template wrappers (all share the same layout) ───────────────────────────
+// ─── Template wrappers ────────────────────────────────────────────────────────
 const renderClassic = (doc, invoice, client, settings, watermark, logoSource) =>
   renderInvoiceLayout(doc, invoice, client, settings, watermark, logoSource, {
-    navy:         settings.headerColor,
-    accent:       settings.accentColor,
-    white:        '#FFFFFF',
-    bodyText:     '#1E293B',
-    mutedText:    '#64748B',
-    borderColor:  '#E2E8F0',
+    navy:          settings.headerColor,
+    accent:        settings.accentColor,
+    white:         '#FFFFFF',
+    bodyText:      '#1E293B',
+    mutedText:     '#64748B',
+    borderColor:   '#E2E8F0',
     tableHeaderBg: settings.headerColor,
-    totalRowBg:   settings.headerColor,
+    totalRowBg:    settings.headerColor,
   });
 
 const renderMinimal = (doc, invoice, client, settings, watermark, logoSource) =>
   renderInvoiceLayout(doc, invoice, client, settings, watermark, logoSource, {
-    navy:         settings.headerColor,
-    accent:       settings.accentColor,
-    white:        '#FFFFFF',
-    bodyText:     '#111827',
-    mutedText:    '#6B7280',
-    borderColor:  '#D1D5DB',
+    navy:          settings.headerColor,
+    accent:        settings.accentColor,
+    white:         '#FFFFFF',
+    bodyText:      '#111827',
+    mutedText:     '#6B7280',
+    borderColor:   '#D1D5DB',
     tableHeaderBg: settings.headerColor,
-    totalRowBg:   settings.headerColor,
+    totalRowBg:    settings.headerColor,
   });
 
 const renderBold = (doc, invoice, client, settings, watermark, logoSource) =>
   renderInvoiceLayout(doc, invoice, client, settings, watermark, logoSource, {
-    navy:         settings.headerColor,
-    accent:       settings.accentColor,
-    white:        '#FFFFFF',
-    bodyText:     '#334155',
-    mutedText:    '#64748B',
-    borderColor:  '#CBD5E1',
+    navy:          settings.headerColor,
+    accent:        settings.accentColor,
+    white:         '#FFFFFF',
+    bodyText:      '#334155',
+    mutedText:     '#64748B',
+    borderColor:   '#CBD5E1',
     tableHeaderBg: settings.headerColor,
-    totalRowBg:   settings.headerColor,
+    totalRowBg:    settings.headerColor,
   });
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
 exports.generatePDF = async (invoice, client, res, template = 'classic', watermark = '', assetBaseUrl = '') => {
-  // autoFirstPage: false so we control exactly one page
-  const doc      = new PDFDocument({ size: 'A4', margin: 36, autoFirstPage: true, bufferPages: true });
-  const settings = getTemplateSettings(invoice, template);
+  // KEY FIX: autoFirstPage: false prevents PDFKit from ever auto-adding pages.
+  // We manually add EXACTLY one page. All text uses lineBreak: false and
+  // explicit absolute Y coordinates, so nothing can trigger a page overflow.
+  const doc = new PDFDocument({
+    size:          'A4',
+    margin:        0,
+    autoFirstPage: false,  // We add the page ourselves below
+    bufferPages:   true,   // Required to use switchToPage / bufferedPageRange
+    layout:        'portrait',
+  });
+
+  const settings   = getTemplateSettings(invoice, template);
   const logoSource = await getLogoSource(settings, assetBaseUrl);
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', 'attachment; filename=' + invoice.invoiceNumber + '.pdf');
   doc.pipe(res);
 
+  // Add exactly ONE page
+  doc.addPage({ size: 'A4', margin: 0 });
+
+  // Render the invoice layout
   if      (template === 'minimal') renderMinimal(doc, invoice, client, settings, watermark, logoSource);
   else if (template === 'bold')    renderBold   (doc, invoice, client, settings, watermark, logoSource);
   else                             renderClassic(doc, invoice, client, settings, watermark, logoSource);
+
+  // Safety: if any content somehow triggered extra pages, keep only page 0
+  const range = doc.bufferedPageRange();
+  if (range.count > 1) {
+    doc.switchToPage(0);
+  }
 
   doc.flushPages();
   doc.end();
