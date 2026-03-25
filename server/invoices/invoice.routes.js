@@ -30,7 +30,7 @@ router.get('/download/:id', requireAuth, async (req, res) => {
     return downloadInvoice(req, res);
 });
 
-router.get('/pdf/:id', requireAuth, getInvoicePDF);
+// router.get('/pdf/:id', requireAuth, getInvoicePDF);
 
 // PUT /api/invoices/:id/status
 router.put('/:id/status', requireAuth, async (req, res) => {
