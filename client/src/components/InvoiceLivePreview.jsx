@@ -1,3 +1,4 @@
+// client\src\components\InvoiceLivePreview.jsx
 import React, { useMemo } from 'react';
 import { getAssetUrl } from '../services/api';
 
@@ -26,6 +27,14 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
 
   const logoSrc = settings.logoPreview || getAssetUrl(settings.logoUrl);
 
+  // ✅ Bank details — reads from settings (same keys as InvoicePro form state)
+  const hasBankDetails = !!(
+    settings.accountHolderName ||
+    settings.accountNumber ||
+    settings.ifsc ||
+    settings.upiId
+  );
+
   const renderCompanyIdentity = (textClass = '', detailClass = '') => (
     <div className="flex items-start gap-3">
       {logoSrc ? (
@@ -41,15 +50,36 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
     </div>
   );
 
+  // ✅ FIXED: Payment Details block — matches PDF layout (left of totals)
+  const renderBankDetails = (accentCol = accentColor) => {
+    if (!hasBankDetails) return null;
+    const rows = [];
+    if (settings.accountHolderName) rows.push(['Account Name', settings.accountHolderName]);
+    if (settings.accountNumber)     rows.push(['Account No.',  settings.accountNumber]);
+    if (settings.ifsc)              rows.push(['IFSC Code',    settings.ifsc]);
+    if (settings.upiId)             rows.push(['UPI ID',       settings.upiId]);
+    if (settings.panNumber)         rows.push(['PAN',          settings.panNumber]);
 
-  const renderFooter = () => (
-    <div className="mt-8 pt-4 border-t border-slate-100 text-[8px] text-center text-slate-500">
-      {form.disclaimer && <div className="italic mb-1.5">{form.disclaimer}</div>}
-      {(settings.accountNumber || settings.ifsc || settings.accountHolderName) && (
-        <div className="not-italic">
-          Bank: {settings.accountHolderName || '-'} | A/C: {settings.accountNumber || '-'} | IFSC: {settings.ifsc || '-'} | UPI: -
+    return (
+      <div className="flex-1 min-w-0">
+        <div className="text-[8px] font-bold tracking-widest mb-2" style={{ color: accentCol }}>
+          PAYMENT DETAILS
         </div>
-      )}
+        <div className="space-y-1">
+          {rows.map(([label, value]) => (
+            <div key={label} className="flex gap-2 text-[8px]">
+              <span className="text-slate-400 w-20 shrink-0">{label}:</span>
+              <span className="text-slate-700 font-semibold">{value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderFooter = (customClass = 'mt-8 pt-4 border-t border-slate-100 text-slate-500', customStyle = {}) => (
+    <div className={`text-[8px] text-center ${customClass}`} style={customStyle}>
+      {form.disclaimer && <div className="italic mb-1.5">{form.disclaimer}</div>}
     </div>
   );
 
@@ -69,6 +99,38 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
     <tr><td colSpan={4} className="px-3 py-6 text-center text-slate-400 italic">No items added yet…</td></tr>
   );
 
+  // ─── TOTALS + BANK SIDE BY SIDE (shared across all templates) ───
+  const renderTotalsSection = (totalBorderColor = '#E5E7EB') => (
+    <div className={`flex gap-4 items-start ${compactMode ? 'mt-3' : 'mt-5'}`}>
+      {/* LEFT: Bank Details */}
+      {renderBankDetails(accentColor)}
+
+      {/* RIGHT: Totals */}
+      <div className="w-48 shrink-0 space-y-2 text-[9px] text-slate-600">
+        <div className="flex justify-between">
+          <span>Subtotal:</span><span>{fmt(subtotal)}</span>
+        </div>
+        {parseFloat(form.discount) > 0 && (
+          <div className="flex justify-between">
+            <span>Discount ({form.discount}%):</span><span>-{fmt(discAmt)}</span>
+          </div>
+        )}
+        {parseFloat(form.tax) > 0 && (
+          <div className="flex justify-between">
+            <span>Tax:</span><span>+{fmt(taxAmt)}</span>
+          </div>
+        )}
+        <div
+          className="flex justify-between border-t-2 pt-2 text-sm font-bold"
+          style={{ borderColor: totalBorderColor, color: accentColor }}
+        >
+          <span>TOTAL</span><span>{fmt(total)}</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ─── MINIMAL TEMPLATE ───────────────────────────────────────────
   if (template === 'minimal') {
     return (
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden text-[10px] text-slate-800 shadow-inner">
@@ -109,18 +171,15 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
             <tbody>{renderRows(() => 'border-b border-slate-200', 'text-slate-900')}</tbody>
           </table>
 
-          <div className={`ml-auto w-48 space-y-2 text-[9px] text-slate-600 ${compactMode ? 'mt-3' : 'mt-5'}`}>
-            <div className="flex justify-between"><span>Subtotal:</span><span>{fmt(subtotal)}</span></div>
-            {parseFloat(form.discount) > 0 && <div className="flex justify-between"><span>Discount ({form.discount}%):</span><span>-{fmt(discAmt)}</span></div>}
-            {parseFloat(form.tax) > 0 && <div className="flex justify-between"><span>Tax:</span><span>+{fmt(taxAmt)}</span></div>}
-            <div className="flex justify-between border-t-2 pt-2 text-sm font-bold" style={{ borderColor: headerColor, color: headerColor }}><span>TOTAL</span><span>{fmt(total)}</span></div>
-          </div>
-          {renderFooter()}
+          {/* ✅ Totals + Bank side by side */}
+          {renderTotalsSection(headerColor)}
+          {renderFooter('', { color: accentColor })}
         </div>
       </div>
     );
   }
 
+  // ─── BOLD TEMPLATE ──────────────────────────────────────────────
   if (template === 'bold') {
     return (
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden text-[10px] text-slate-800 shadow-inner">
@@ -147,7 +206,12 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
               {form.yourGST && <p className="text-[9px] text-slate-500">Your GST: {form.yourGST}</p>}
             </div>
             <div className="text-right">
-              {form.watermark && <span className="inline-block rounded px-2 py-1 text-[8px] font-bold uppercase" style={{ background: `${accentColor}22`, color: accentColor }}>{form.watermark}</span>}
+              {form.watermark && (
+                <span className="inline-block rounded px-2 py-1 text-[8px] font-bold uppercase"
+                  style={{ background: `${accentColor}22`, color: accentColor }}>
+                  {form.watermark}
+                </span>
+              )}
             </div>
           </div>
 
@@ -163,18 +227,15 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
             <tbody>{renderRows((idx) => idx % 2 === 0 ? 'bg-slate-50' : '', 'text-slate-700')}</tbody>
           </table>
 
-          <div className={`ml-auto w-52 rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2 text-[9px] text-slate-600 ${compactMode ? 'mt-3' : 'mt-5'}`}>
-            <div className="flex justify-between"><span>Subtotal:</span><span>{fmt(subtotal)}</span></div>
-            {parseFloat(form.discount) > 0 && <div className="flex justify-between"><span>Discount ({form.discount}%):</span><span>-{fmt(discAmt)}</span></div>}
-            {parseFloat(form.tax) > 0 && <div className="flex justify-between"><span>Tax:</span><span>+{fmt(taxAmt)}</span></div>}
-            <div className="-mx-3 -mb-3 mt-2 flex justify-between px-3 py-2 text-sm font-bold text-white" style={{ background: headerColor }}><span>TOTAL</span><span>{fmt(total)}</span></div>
-          </div>
-          {renderFooter()}
+          {/* ✅ Totals + Bank side by side */}
+          {renderTotalsSection(headerColor)}
+          {renderFooter('', { color: accentColor })}
         </div>
       </div>
     );
   }
 
+  // ─── CLASSIC TEMPLATE (default) ─────────────────────────────────
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden text-[10px] text-slate-800 shadow-inner">
       <div className="flex items-start justify-between px-6 py-5 text-white" style={{ background: headerColor }}>
@@ -198,7 +259,12 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
             {form.yourGST && <p className="text-[9px] text-slate-500">Your GST: {form.yourGST}</p>}
           </div>
           <div className="text-right">
-            {form.watermark && <span className="inline-block rounded px-2 py-1 text-[8px] font-bold uppercase" style={{ background: `${accentColor}22`, color: accentColor }}>{form.watermark}</span>}
+            {form.watermark && (
+              <span className="inline-block rounded px-2 py-1 text-[8px] font-bold uppercase"
+                style={{ background: `${accentColor}22`, color: accentColor }}>
+                {form.watermark}
+              </span>
+            )}
           </div>
         </div>
 
@@ -214,14 +280,9 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
           <tbody>{renderRows(() => showRowDividers ? 'border-b border-slate-100' : '', '')}</tbody>
         </table>
 
-        <div className={`ml-auto w-52 bg-slate-50 p-3 space-y-2 text-[9px] text-slate-600 ${compactMode ? 'mt-3' : 'mt-5'}`}>
-          <div className="flex justify-between"><span>Subtotal:</span><span>{fmt(subtotal)}</span></div>
-          {parseFloat(form.discount) > 0 && <div className="flex justify-between"><span>Discount ({form.discount}%):</span><span>-{fmt(discAmt)}</span></div>}
-          {parseFloat(form.tax) > 0 && <div className="flex justify-between"><span>Tax:</span><span>+{fmt(taxAmt)}</span></div>}
-          <div className="flex justify-between border-t border-slate-200 pt-2 text-sm font-bold" style={{ color: accentColor }}><span>TOTAL</span><span>{fmt(total)}</span></div>
-        </div>
-
-        {renderFooter()}
+        {/* ✅ Totals + Bank side by side */}
+        {renderTotalsSection('#E5E7EB')}
+        {renderFooter('', { color: accentColor })}
       </div>
     </div>
   );
