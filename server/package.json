@@ -4,10 +4,10 @@
   "description": "Backend API for Invoicefy",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js",
-    "lint": "echo 'No lint configured'"
-  },
+  "start": "node app.js",
+  "dev": "nodemon app.js",
+  "build": "npm install"
+},
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.6.1",
