@@ -50,7 +50,10 @@ const InvoicesList = () => {
             toast.error('Failed to download PDF', { id: 'pdf-toast' });
         }
     };
-
+   
+const handlePreviewPDF = (id) => {
+    window.open(`${process.env.REACT_APP_API_URL}/invoices/pdf/${id}`, '_blank');
+};
     const handleStatusChange = async (id, newStatus) => {
         try {
             const res = await invoicesAPI.updateStatus(id, newStatus);
@@ -131,14 +134,23 @@ const InvoicesList = () => {
                                                 <option value="Overdue" className="bg-white text-slate-900">Overdue</option>
                                             </select>
                                         </td>
-                                        <td className="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
-                                            <button
-                                                onClick={() => handleDownloadPDF(invoice.id, invoice.invoiceNumber)}
-                                                className="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-700 hover:bg-blue-600 hover:text-white rounded-lg transition-colors font-semibold"
-                                            >
-                                                Download PDF
-                                            </button>
-                                        </td>
+                                      <td className="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
+                                            <div className="flex gap-2 justify-end">
+                                               <button
+                                                   onClick={() => handlePreviewPDF(invoice.id)}
+                                                   className="px-3 py-2 bg-blue-100 text-blue-700 hover:bg-blue-600 hover:text-white rounded-lg transition-colors font-semibold"
+                                                 >
+                                                 Preview
+                                               </button>
+
+                                              <button
+                                                    onClick={() => handleDownloadPDF(invoice.id, invoice.invoiceNumber)}
+                                                    className="px-3 py-2 bg-slate-100 text-slate-700 hover:bg-gray-800 hover:text-white rounded-lg transition-colors font-semibold"
+                                              >
+                                              Download
+                                             </button>
+                                         </div>
+                                    </td>
                                     </tr>
                                 ))}
                             </tbody>

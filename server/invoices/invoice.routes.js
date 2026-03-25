@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createInvoice, getInvoice, updateStatus, downloadInvoice } = require('./invoice.controller');
+const { createInvoice, getInvoice, updateStatus, downloadInvoice, getInvoicePDF } = require('./invoice.controller');
 const { requireAuth } = require('../middleware/auth.middleware');
 const Invoice = require('./invoice.model');
 const Client = require('../clients/client.model');
@@ -29,6 +29,8 @@ router.get('/download/:id', requireAuth, async (req, res) => {
     req.query = { ...req.query, id: req.params.id };
     return downloadInvoice(req, res);
 });
+
+router.get('/pdf/:id', requireAuth, getInvoicePDF);
 
 // PUT /api/invoices/:id/status
 router.put('/:id/status', requireAuth, async (req, res) => {
