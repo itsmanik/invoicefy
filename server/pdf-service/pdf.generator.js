@@ -98,30 +98,23 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
 
   // ── 1. HEADER ────────────────────────────────────────────────────────────
   const HEADER_H = 90;
-  if (!backgroundSource) {
-    doc.rect(0, 0, PAGE_W, HEADER_H).fill(navy);
-  } else {
-    // White overlay for header text legibility - matching bg-white/90
-    doc.save()
-       .rect(0, 0, PAGE_W, HEADER_H)
-       .fillColor('#FFFFFF').fillOpacity(0.9).fill();
-    doc.restore();
-  }
+  // Always solid navy header — works on any background color including white
+  doc.rect(0, 0, PAGE_W, HEADER_H).fill(navy);
 
   const logoSize   = 44;
   const logoOffset = drawLogo(doc, logoSource, MARGIN, (HEADER_H - logoSize) / 2, logoSize);
   const compX      = MARGIN + logoOffset;
 
-  doc.fillColor(backgroundSource ? navy : white).fontSize(26).font('Helvetica-Bold')
+  doc.fillColor(white).fontSize(26).font('Helvetica-Bold')
      .text(settings.companyName || 'Invoicefy', compX, 20, { width: 240, lineBreak: false });
 
-  doc.font('Helvetica').fontSize(8).fillColor(backgroundSource ? bodyText : '#CBD5E1');
+  doc.font('Helvetica').fontSize(8).fillColor('#CBD5E1');
   if (settings.companyAddress) {
     doc.text(settings.companyAddress, compX, 54, { width: 240, lineBreak: false });
   }
 
   const docLabel = getDocumentLabel(invoice);
-  doc.fillColor(backgroundSource ? navy : white).fontSize(26).font('Helvetica-Bold')
+  doc.fillColor(white).fontSize(26).font('Helvetica-Bold')
      .text(docLabel, MARGIN, 28, { width: CONTENT, align: 'right', lineBreak: false });
 
   // ── 2. META ───────────────────────────────────────────────────────────────
@@ -130,12 +123,7 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   const dueDate     = new Date(invoiceDate.getTime() + 30 * 24 * 60 * 60 * 1000);
   const fmtDate     = (d) => d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
-  if (backgroundSource) {
-    doc.save()
-       .rect(PAGE_W - MARGIN - 120, META_Y - 4, 120, 56)
-       .fillColor('#FFFFFF').fillOpacity(0.7).fill();
-    doc.restore();
-  }
+  // No overlay for meta area - text reads directly on background
 
   doc.fillColor(mutedText).fontSize(8.5).font('Helvetica')
      .text(invoice.invoiceNumber,           MARGIN, META_Y,      { width: CONTENT, align: 'right', lineBreak: false })
@@ -148,29 +136,22 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
     doc.fontSize(8.5).font('Helvetica-Bold');
     const bW = doc.widthOfString(watermark.toUpperCase()) + 14;
     doc.rect(PAGE_W - MARGIN - bW, META_Y + 38, bW, 16)
-       .fillColor(accent).fillOpacity(0.15).fill();
-    doc.restore();
+       .fillColor(accent).fillOpacity(0.4).fill();
+    doc.restore().fillOpacity(1);
     doc.fillColor(accent).fontSize(8.5).font('Helvetica-Bold')
        .text(watermark.toUpperCase(), PAGE_W - MARGIN - bW, META_Y + 41, { width: bW, align: 'center', lineBreak: false });
   }
 
   const DIVIDER_Y = META_Y + 58;
-  if (!backgroundSource) {
-    doc.strokeColor(borderColor).lineWidth(0.8)
-       .moveTo(MARGIN, DIVIDER_Y).lineTo(PAGE_W - MARGIN, DIVIDER_Y).stroke();
-  }
+  doc.strokeColor(borderColor).lineWidth(0.8)
+     .moveTo(MARGIN, DIVIDER_Y).lineTo(PAGE_W - MARGIN, DIVIDER_Y).stroke();
 
   // ── 3. FROM / BILL TO ─────────────────────────────────────────────────────
   const INFO_Y = DIVIDER_Y + 10;
   const COL_W  = CONTENT / 2 - 10;
   const COL2_X = MARGIN + COL_W + 20;
 
-  if (backgroundSource) {
-    doc.save()
-       .rect(MARGIN - 6, INFO_Y - 6, CONTENT + 12, 74)
-       .fillColor('#FFFFFF').fillOpacity(0.9).fill();
-    doc.restore();
-  }
+  // Body text on background reads directly - no overlays
 
   doc.fillColor(mutedText).fontSize(7.5).font('Helvetica-Bold')
      .text('FROM',    MARGIN,  INFO_Y, { lineBreak: false })
@@ -240,22 +221,9 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   }
 
   const TH = 40;
-  if (backgroundSource) {
-    const itemsCount  = Math.max(invoice.items?.length || 1, 1);
-    const tableHeight = TH + (itemsCount * ROW_H);
-    // Draw background for entire table area
-    doc.save()
-       .rect(MARGIN, TABLE_Y, CONTENT, tableHeight)
-       .fillColor('#FFFFFF').fillOpacity(0.85).fill();
-    doc.restore();
-  }
-
-  if (!backgroundSource) {
-    doc.rect(MARGIN, TABLE_Y, CONTENT, TH).fill(tableHeaderBg);
-    doc.fillColor(white);
-  } else {
-    doc.fillColor(navy); // Use header color for text if on glass
-  }
+  // Always use solid navy table header - no conditional overlays
+  doc.rect(MARGIN, TABLE_Y, CONTENT, TH).fill(tableHeaderBg);
+  doc.fillColor(white);
   doc.fontSize(9).font('Helvetica-Bold');
   cols.forEach(col => {
     const lines  = col.label.split('\n');
@@ -283,10 +251,7 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
       const sgst      = cgst;
       const lineTotal = hasTax ? lineBase + cgst + sgst : lineBase;
 
-      if (i % 2 === 0 && !backgroundSource) doc.rect(MARGIN, rowY, CONTENT, ROW_H).fill('#F8FAFC');
-      else if (i % 2 === 0 && backgroundSource) {
-        doc.save().rect(MARGIN, rowY, CONTENT, ROW_H).fillColor('#FFFFFF').fillOpacity(0.3).fill().restore();
-      }
+      if (i % 2 === 0) doc.rect(MARGIN, rowY, CONTENT, ROW_H).fill('#F8FAFC');
 
       // PDFKit places text from the top of the cap-height; add 3px extra to visually center
       const textY = rowY + (ROW_H - 9) / 2 - 2;
@@ -342,13 +307,8 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
 
   const drawTotRow = (label, value, highlight) => {
     if (highlight) {
-      if (!backgroundSource) {
-        doc.rect(TOT_X - 8, totY - 5, TOT_W + 8, 26).fill(totalRowBg);
-        doc.fillColor(white);
-      } else {
-        doc.save().rect(TOT_X - 8, totY - 5, TOT_W + 8, 26).fillColor('#FFFFFF').fillOpacity(0.5).fill().restore();
-        doc.fillColor(navy);
-      }
+      doc.rect(TOT_X - 8, totY - 5, TOT_W + 8, 26).fill(totalRowBg);
+      doc.fillColor(white);
       doc.fontSize(11).font('Helvetica-Bold')
          .text(label, TOT_X,     totY, { width: 100,       align: 'left',  lineBreak: false })
          .text(value, TOT_X - 4, totY, { width: TOT_W - 4, align: 'right', lineBreak: false });
@@ -392,12 +352,7 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
     const BD_W = TOT_X - MARGIN - 16;
     let   bdY  = BLOCK_Y;
 
-    if (backgroundSource) {
-      doc.save()
-         .rect(BD_X - 4, bdY - 4, BD_W + 8, 120) // assumed height
-         .fillColor('#FFFFFF').fillOpacity(0.7).fill();
-      doc.restore();
-    }
+    // No overlay for payment details
 
     doc.fillColor(accent).fontSize(11).font('Helvetica-Bold')
        .text('PAYMENT DETAILS', BD_X, bdY, { lineBreak: false });
@@ -428,12 +383,7 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   const SIG_BODY_Y  = FOOTER_TOP - 70;       // 70px above footer = comfortable gap
 
   // Top border line for signature zone
-  if (backgroundSource) {
-    doc.save()
-       .rect(SIG_X - 4, SIG_BODY_Y - 4, SIG_W + 8, 64)
-       .fillColor('#FFFFFF').fillOpacity(0.8).fill();
-    doc.restore();
-  }
+  // (Signature overlay removed per request)
 
   doc.strokeColor(borderColor).lineWidth(0.8)
      .moveTo(SIG_X, SIG_BODY_Y).lineTo(SIG_X + SIG_W, SIG_BODY_Y).stroke();
@@ -448,16 +398,12 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
      .text('For ' + (settings.companyName || 'Invoicefy'), SIG_X, SIG_BODY_Y + 40,
            { width: SIG_W, align: 'center', lineBreak: false });
 
-  // ── 7. FOOTER — plain dark bar with disclaimer only ───────────────────────
+  // ── 7. FOOTER — always solid navy bar ───────────────────────────────────
   const FOOTER_H = 36;
   const FOOTER_Y = PAGE_H - FOOTER_H;
 
-  if (!backgroundSource) {
-    doc.rect(0, FOOTER_Y, PAGE_W, FOOTER_H).fill(navy);
-    doc.fillColor('#CBD5E1');
-  } else {
-    doc.fillColor(navy);
-  }
+  doc.rect(0, FOOTER_Y, PAGE_W, FOOTER_H).fill(navy);
+  doc.fillColor('#CBD5E1');
 
   doc.fontSize(8).font('Helvetica')
      .text(

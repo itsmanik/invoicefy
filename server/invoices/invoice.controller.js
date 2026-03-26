@@ -282,12 +282,15 @@ exports.downloadInvoice = async (req, res) => {
     const forwardedProto = req.get('x-forwarded-proto');
     const assetBaseUrl = `${forwardedProto || req.protocol}://${req.get('host')}`;
 
-    // Pass business profile template URL as fallback if invoice lack it
-    if (invoice.template === 'custom' && (!invoice.templateSettings || !invoice.templateSettings.customTemplateUrl)) {
+    // Pass business profile template URL and Logo as fallback if invoice lack it
+    if (!invoice.templateSettings || !invoice.templateSettings.customTemplateUrl) {
       invoice.templateSettings = {
         ...(invoice.templateSettings || {}),
-        customTemplateUrl: business.customTemplateUrl
+        customTemplateUrl: business.customTemplateUrl,
+        logoUrl:           invoice.templateSettings?.logoUrl || business.logoUrl
       };
+    } else if (!invoice.templateSettings.logoUrl) {
+      invoice.templateSettings.logoUrl = business.logoUrl;
     }
 
     return await generatePDF(
