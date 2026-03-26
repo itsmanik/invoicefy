@@ -96,10 +96,15 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
     } catch (e) { console.error('BG Error:', e); }
   }
 
-  // ── 1. HEADER ────────────────────────────────────────────────────────────
+  // ── 1. HEADER ────────────────────────────────────────────────────────
   const HEADER_H = 90;
-  // Always solid navy header — works on any background color including white
-  doc.rect(0, 0, PAGE_W, HEADER_H).fill(navy);
+  if (backgroundSource) {
+    // Semi-transparent navy so background image blends through
+    doc.save().rect(0, 0, PAGE_W, HEADER_H).fillColor(navy).fillOpacity(0.82).fill().restore();
+    doc.fillOpacity(1);
+  } else {
+    doc.rect(0, 0, PAGE_W, HEADER_H).fill(navy);
+  }
 
   const logoSize   = 44;
   const logoOffset = drawLogo(doc, logoSource, MARGIN, (HEADER_H - logoSize) / 2, logoSize);
@@ -221,8 +226,13 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   }
 
   const TH = 40;
-  // Always use solid navy table header - no conditional overlays
-  doc.rect(MARGIN, TABLE_Y, CONTENT, TH).fill(tableHeaderBg);
+  if (backgroundSource) {
+    // Semi-transparent table header so bg bleeds through
+    doc.save().rect(MARGIN, TABLE_Y, CONTENT, TH).fillColor(tableHeaderBg).fillOpacity(0.82).fill().restore();
+    doc.fillOpacity(1);
+  } else {
+    doc.rect(MARGIN, TABLE_Y, CONTENT, TH).fill(tableHeaderBg);
+  }
   doc.fillColor(white);
   doc.fontSize(9).font('Helvetica-Bold');
   cols.forEach(col => {
@@ -251,7 +261,14 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
       const sgst      = cgst;
       const lineTotal = hasTax ? lineBase + cgst + sgst : lineBase;
 
-      if (i % 2 === 0) doc.rect(MARGIN, rowY, CONTENT, ROW_H).fill('#F8FAFC');
+      if (backgroundSource) {
+        // Semi-transparent row bg so background shows through
+        const rowAlpha = i % 2 === 0 ? 0.6 : 0.5;
+        doc.save().rect(MARGIN, rowY, CONTENT, ROW_H).fillColor(i % 2 === 0 ? '#F8FAFC' : '#FFFFFF').fillOpacity(rowAlpha).fill().restore();
+        doc.fillOpacity(1);
+      } else {
+        if (i % 2 === 0) doc.rect(MARGIN, rowY, CONTENT, ROW_H).fill('#F8FAFC');
+      }
 
       // PDFKit places text from the top of the cap-height; add 3px extra to visually center
       const textY = rowY + (ROW_H - 9) / 2 - 2;
@@ -307,7 +324,13 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
 
   const drawTotRow = (label, value, highlight) => {
     if (highlight) {
-      doc.rect(TOT_X - 8, totY - 5, TOT_W + 8, 26).fill(totalRowBg);
+      if (backgroundSource) {
+        // Semi-transparent grand total row
+        doc.save().rect(TOT_X - 8, totY - 5, TOT_W + 8, 26).fillColor(totalRowBg).fillOpacity(0.82).fill().restore();
+        doc.fillOpacity(1);
+      } else {
+        doc.rect(TOT_X - 8, totY - 5, TOT_W + 8, 26).fill(totalRowBg);
+      }
       doc.fillColor(white);
       doc.fontSize(11).font('Helvetica-Bold')
          .text(label, TOT_X,     totY, { width: 100,       align: 'left',  lineBreak: false })
@@ -398,11 +421,16 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
      .text('For ' + (settings.companyName || 'Invoicefy'), SIG_X, SIG_BODY_Y + 40,
            { width: SIG_W, align: 'center', lineBreak: false });
 
-  // ── 7. FOOTER — always solid navy bar ───────────────────────────────────
+  // ── 7. FOOTER — semi-transparent when custom bg, solid otherwise ─────────
   const FOOTER_H = 36;
   const FOOTER_Y = PAGE_H - FOOTER_H;
 
-  doc.rect(0, FOOTER_Y, PAGE_W, FOOTER_H).fill(navy);
+  if (backgroundSource) {
+    doc.save().rect(0, FOOTER_Y, PAGE_W, FOOTER_H).fillColor(navy).fillOpacity(0.82).fill().restore();
+    doc.fillOpacity(1);
+  } else {
+    doc.rect(0, FOOTER_Y, PAGE_W, FOOTER_H).fill(navy);
+  }
   doc.fillColor('#CBD5E1');
 
   doc.fontSize(8).font('Helvetica')

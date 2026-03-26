@@ -60,6 +60,23 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
   const accent      = settings.primaryColor || settings.accentColor ||
     (template === 'minimal' ? '#6B7280' : template === 'bold' ? '#F59E0B' : '#1d4ed8');
 
+  const isCustom = template === 'custom' && !!settings.customTemplatePreview;
+
+  // Helper: convert hex to rgba for semi-transparent overlays
+  const hexToRgba = (hex, alpha) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  };
+
+  // Semi-transparent navy for blending custom bg through structural elements
+  const navyBg      = isCustom ? hexToRgba(navy, 0.82) : navy;
+  const rowEvenBg   = isCustom ? 'rgba(248,250,252,0.6)' : '#F8FAFC';
+  const rowOddBg    = isCustom ? 'rgba(255,255,255,0.5)' : '#FFFFFF';
+  // Text shadow for readability on custom backgrounds
+  const bodyShadow  = isCustom ? '0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.7)' : 'none';
+
   const documentType  = form.documentType || 'invoice';
   const documentLabel = documentType === 'quotation' ? 'QUOTATION' : 'TAX INVOICE';
   const invoiceNumber = `${documentType === 'quotation' ? 'QUO' : (settings.invoicePrefix || 'INV')}-0001`;
@@ -112,7 +129,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       )}
 
       {/* ── 1. HEADER BAR ─────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-5 py-3 relative z-10" style={{ background: navy, minHeight: 72 }}>
+      <div className="flex items-center justify-between px-5 py-3 relative z-10" style={{ background: navyBg, minHeight: 72 }}>
         {/* Left: logo + company */}
         <div className="flex items-center gap-2.5">
           {logoSrc && (
@@ -136,7 +153,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       </div>
 
       {/* ── 2. META ROW ───────────────────────────────────────────────── */}
-      <div className="flex justify-end px-5 pt-2 pb-1 gap-4 text-[8px] relative z-10">
+      <div className="flex justify-end px-5 pt-2 pb-1 gap-4 text-[8px] relative z-10" style={{ textShadow: bodyShadow }}>
         <div className="text-right space-y-0.5">
           <div className="text-slate-500">{invoiceNumber}</div>
           <div className="text-slate-500">Date: {form.invoiceDate || '—'}</div>
@@ -161,7 +178,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       <div className="mx-5 border-t border-slate-200" />
 
       {/* ── 4. FROM / BILL TO ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 px-5 pt-2 pb-3 gap-4 relative z-10" style={{ borderBottom: '1px solid #E2E8F0' }}>
+      <div className="grid grid-cols-2 px-5 pt-2 pb-3 gap-4 relative z-10" style={{ borderBottom: '1px solid #E2E8F0', textShadow: bodyShadow }}>
         {/* FROM */}
         <div className="pr-4" style={{ borderRight: '1px solid #E2E8F0' }}>
           <div className="text-[7px] font-bold tracking-widest text-slate-400 mb-1">FROM</div>
@@ -201,7 +218,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
         {/* Header row */}
         <div
           className="flex text-white text-[8.5px] font-bold"
-          style={{ background: navy, padding: '12px 8px' }}
+          style={{ background: navyBg, padding: '12px 8px' }}
         >
           {cols.map((col, ci) => (
             <div key={ci} style={{ flex: col.flex }} className={thAlign[col.align]}>
@@ -227,8 +244,9 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
               className="flex items-center text-[8.5px] text-slate-700"
               style={{
                 padding: '12px 8px',
-                background: idx % 2 === 0 ? '#F8FAFC' : '#FFFFFF',
+                background: idx % 2 === 0 ? rowEvenBg : rowOddBg,
                 borderBottom: showDividers ? '1px solid #E2E8F0' : 'none',
+                textShadow: bodyShadow,
               }}
             >
               {hasTax ? (
@@ -257,7 +275,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       </div>
 
       {/* ── 6. TOTALS + BANK SIDE BY SIDE ────────────────────────────── */}
-      <div className="flex gap-3 px-5 pt-7 pb-3 items-start relative z-10">
+      <div className="flex gap-3 px-5 pt-7 pb-3 items-start relative z-10" style={{ textShadow: bodyShadow }}>
 
         {/* LEFT: Bank / Payment details */}
         {hasBD && (
@@ -320,7 +338,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
           {/* GRAND TOTAL */}
           <div
             className="flex justify-between items-center text-white font-bold text-[10px]"
-            style={{ background: navy, padding: '5px 8px' }}
+            style={{ background: navyBg, padding: '5px 8px' }}
           >
             <span>GRAND TOTAL</span>
             <span>{fmt(total)}</span>
@@ -354,7 +372,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       {/* ── 7. FOOTER BAR ────────────────────────────────────────────── */}
       <div
         className="px-5 flex items-center justify-center relative z-10"
-        style={{ background: navy, minHeight: 32 }}
+        style={{ background: navyBg, minHeight: 32 }}
       >
         <div className="text-[7.5px] text-center" style={{ color: '#CBD5E1' }}>
           {form.disclaimer || 'Payment expected within 45 days from invoice date.'}
