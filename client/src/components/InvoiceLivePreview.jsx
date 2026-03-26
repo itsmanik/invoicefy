@@ -129,25 +129,28 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       )}
 
       {/* ── 1. HEADER BAR ─────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-5 py-3 relative z-10" style={{ background: navyBg, minHeight: 72 }}>
+      <div
+        className="flex items-center justify-between px-5 py-3 relative z-10"
+        style={{ background: isCustom ? 'transparent' : navy, minHeight: 72, textShadow: isCustom ? bodyShadow : 'none' }}
+      >
         {/* Left: logo + company */}
         <div className="flex items-center gap-2.5">
           {logoSrc && (
             <img src={logoSrc} alt="logo" className="h-10 w-10 object-contain rounded" />
           )}
           <div>
-            <div className="text-[20px] font-bold text-white leading-tight">
+            <div className="text-[20px] font-bold leading-tight" style={{ color: isCustom ? navy : 'white' }}>
               {settings.companyName || 'Invoicefy'}
             </div>
             {settings.companyAddress && (
-              <div className="text-[8px] mt-1" style={{ color: '#CBD5E1' }}>
+              <div className="text-[8px] mt-1" style={{ color: isCustom ? '#334155' : '#CBD5E1' }}>
                 {settings.companyAddress}
               </div>
             )}
           </div>
         </div>
         {/* Right: document label */}
-        <div className="text-[22px] font-black text-white tracking-wide">
+        <div className="text-[22px] font-black tracking-wide" style={{ color: isCustom ? navy : 'white' }}>
           {documentLabel}
         </div>
       </div>
@@ -372,9 +375,9 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       {/* ── 7. FOOTER BAR ────────────────────────────────────────────── */}
       <div
         className="px-5 flex items-center justify-center relative z-10"
-        style={{ background: navyBg, minHeight: 32 }}
+        style={{ background: isCustom ? 'transparent' : navy, minHeight: 32, textShadow: isCustom ? bodyShadow : 'none' }}
       >
-        <div className="text-[7.5px] text-center" style={{ color: '#CBD5E1' }}>
+        <div className="text-[7.5px] text-center" style={{ color: isCustom ? '#1E293B' : '#CBD5E1' }}>
           {form.disclaimer || 'Payment expected within 45 days from invoice date.'}
         </div>
       </div>

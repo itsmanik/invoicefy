@@ -98,11 +98,7 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
 
   // ── 1. HEADER ────────────────────────────────────────────────────────
   const HEADER_H = 90;
-  if (backgroundSource) {
-    // Semi-transparent navy so background image blends through
-    doc.save().rect(0, 0, PAGE_W, HEADER_H).fillColor(navy).fillOpacity(0.82).fill().restore();
-    doc.fillOpacity(1);
-  } else {
+  if (!backgroundSource) {
     doc.rect(0, 0, PAGE_W, HEADER_H).fill(navy);
   }
 
@@ -110,16 +106,19 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   const logoOffset = drawLogo(doc, logoSource, MARGIN, (HEADER_H - logoSize) / 2, logoSize);
   const compX      = MARGIN + logoOffset;
 
-  doc.fillColor(white).fontSize(26).font('Helvetica-Bold')
+  const headerTextColor = backgroundSource ? navy : white;
+  const headerAddrColor = backgroundSource ? '#334155' : '#CBD5E1';
+
+  doc.fillColor(headerTextColor).fontSize(26).font('Helvetica-Bold')
      .text(settings.companyName || 'Invoicefy', compX, 20, { width: 240, lineBreak: false });
 
-  doc.font('Helvetica').fontSize(8).fillColor('#CBD5E1');
+  doc.font('Helvetica').fontSize(8).fillColor(headerAddrColor);
   if (settings.companyAddress) {
     doc.text(settings.companyAddress, compX, 54, { width: 240, lineBreak: false });
   }
 
   const docLabel = getDocumentLabel(invoice);
-  doc.fillColor(white).fontSize(26).font('Helvetica-Bold')
+  doc.fillColor(headerTextColor).fontSize(26).font('Helvetica-Bold')
      .text(docLabel, MARGIN, 28, { width: CONTENT, align: 'right', lineBreak: false });
 
   // ── 2. META ───────────────────────────────────────────────────────────────
@@ -425,13 +424,12 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   const FOOTER_H = 36;
   const FOOTER_Y = PAGE_H - FOOTER_H;
 
-  if (backgroundSource) {
-    doc.save().rect(0, FOOTER_Y, PAGE_W, FOOTER_H).fillColor(navy).fillOpacity(0.82).fill().restore();
-    doc.fillOpacity(1);
-  } else {
+  if (!backgroundSource) {
     doc.rect(0, FOOTER_Y, PAGE_W, FOOTER_H).fill(navy);
   }
-  doc.fillColor('#CBD5E1');
+  
+  const footerTextColor = backgroundSource ? '#1E293B' : '#CBD5E1';
+  doc.fillColor(footerTextColor);
 
   doc.fontSize(8).font('Helvetica')
      .text(
