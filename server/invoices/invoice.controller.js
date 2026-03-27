@@ -66,6 +66,7 @@ const sanitizeTemplateSettings = (template, settings = {}) => {
   return {
     companyName: String(value.companyName || 'Invoicefy').trim().slice(0, 80),
     companyEmail: String(value.companyEmail || '').trim().slice(0, 120),
+    companyPhone: String(value.companyPhone || '').trim().slice(0, 50),
     companyAddress: String(value.companyAddress || '').trim().slice(0, 240),
     logoUrl: /^\/uploads\/[A-Za-z0-9._-]+$/.test(value.logoUrl || '') ? value.logoUrl : '',
     customTemplateUrl: /^\/uploads\/[A-Za-z0-9._-]+$/.test(value.customTemplateUrl || '') ? value.customTemplateUrl : '',
@@ -283,15 +284,16 @@ exports.downloadInvoice = async (req, res) => {
     const assetBaseUrl = `${forwardedProto || req.protocol}://${req.get('host')}`;
 
     // Pass business profile template URL and Logo as fallback if invoice lack it
-    if (!invoice.templateSettings || !invoice.templateSettings.customTemplateUrl) {
-      invoice.templateSettings = {
-        ...(invoice.templateSettings || {}),
-        customTemplateUrl: business.customTemplateUrl,
-        logoUrl:           invoice.templateSettings?.logoUrl || business.logoUrl
-      };
-    } else if (!invoice.templateSettings.logoUrl) {
-      invoice.templateSettings.logoUrl = business.logoUrl;
-    }
+    if (!invoice.templateSettings) invoice.templateSettings = {};
+    invoice.templateSettings = {
+      ...invoice.templateSettings,
+      companyName: invoice.templateSettings.companyName || business.name,
+      companyEmail: invoice.templateSettings.companyEmail || business.email,
+      companyAddress: invoice.templateSettings.companyAddress || business.address,
+      companyPhone: invoice.templateSettings.companyPhone || business.phone,
+      customTemplateUrl: invoice.templateSettings.customTemplateUrl || business.customTemplateUrl,
+      logoUrl: invoice.templateSettings.logoUrl || business.logoUrl
+    };
 
     return await generatePDF(
       invoice,

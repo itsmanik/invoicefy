@@ -75,7 +75,7 @@ sequelize.authenticate()
     if (sequelize.getDialect() === 'sqlite') {
       await sequelize.query('PRAGMA foreign_keys = OFF');
     }
-    return sequelize.sync();
+    return sequelize.sync({ alter: true });
   })
   .then(async () => {
     if (sequelize.getDialect() === 'sqlite') {

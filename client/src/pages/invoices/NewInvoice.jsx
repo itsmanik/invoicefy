@@ -25,10 +25,10 @@ const TEMPLATES = [
             <span>Description</span><span className="ml-auto">Qty</span><span>Total</span>
           </div>
           <div className="flex gap-4 px-1 border-b border-gray-100 pb-0.5">
-            <span className="text-gray-700">Item 1</span><span className="ml-auto text-gray-700">1</span><span className="text-gray-700">Rs. 100</span>
+            <span className="text-gray-700">Item 1</span><span className="ml-auto text-gray-700">1</span><span className="text-gray-700">₹100</span>
           </div>
           <div className="flex justify-end pr-1 pt-0.5">
-            <span className="text-blue-600 font-bold">TOTAL: Rs. 100</span>
+            <span className="text-blue-600 font-bold">TOTAL: ₹100</span>
           </div>
         </div>
       </div>
@@ -50,9 +50,9 @@ const TEMPLATES = [
           <span>DESCRIPTION</span><span className="ml-auto">QTY</span><span>AMOUNT</span>
         </div>
         <div className="flex gap-3 px-1 border-b border-gray-200 py-0.5 text-gray-700">
-          <span>Item 1</span><span className="ml-auto">1</span><span>Rs.100</span>
+          <span>Item 1</span><span className="ml-auto">1</span><span>₹100</span>
         </div>
-        <div className="flex justify-end pr-1 pt-0.5 font-bold text-gray-900">TOTAL: Rs.100</div>
+        <div className="flex justify-end pr-1 pt-0.5 font-bold text-gray-900">TOTAL: ₹100</div>
       </div>
     )
   },
@@ -76,7 +76,7 @@ const TEMPLATES = [
             <span>ITEM</span><span className="ml-auto">QTY</span><span>TOTAL</span>
           </div>
           <div className="flex gap-3 px-1 text-slate-600">
-            <span>Item 1</span><span className="ml-auto">1</span><span>Rs.100</span>
+            <span>Item 1</span><span className="ml-auto">1</span><span>₹100</span>
           </div>
         </div>
       </div>
@@ -334,7 +334,7 @@ const NewInvoice = () => {
                 <div className="sm:col-span-5">Description</div>
                 <div className="sm:col-span-2">HSN Code</div>
                 <div className="sm:col-span-2">Quantity</div>
-                <div className="sm:col-span-2">Unit Price (₹)</div>
+                <div className="sm:col-span-2">Unit Price (Rs.)</div>
                 <div className="sm:col-span-1"></div>
               </div>
 
@@ -423,23 +423,23 @@ const NewInvoice = () => {
                 <dl className="space-y-4">
                   <div className="flex justify-between items-center text-slate-300">
                     <dt className="font-medium text-lg">Subtotal</dt>
-                    <dd className="font-mono text-lg">₹{totals.subtotal}</dd>
+                    <dd className="font-mono text-lg">Rs. {totals.subtotal}</dd>
                   </div>
                   {discount > 0 && (
                     <div className="flex justify-between items-center text-emerald-400">
                       <dt className="font-medium">Discount ({discount}%)</dt>
-                      <dd className="font-mono">-₹{(totals.subtotal * (discount / 100)).toFixed(2)}</dd>
+                      <dd className="font-mono">-Rs. {(totals.subtotal * (discount / 100)).toFixed(2)}</dd>
                     </div>
                   )}
                   {tax > 0 && (
                     <div className="flex justify-between items-center text-blue-300">
                       <dt className="font-medium">Tax ({tax}%)</dt>
-                      <dd className="font-mono">+₹{totals.taxAmount}</dd>
+                      <dd className="font-mono">+Rs. {totals.taxAmount}</dd>
                     </div>
                   )}
                   <div className="flex justify-between items-center border-t border-slate-700 pt-6 mt-6">
                     <dt className="text-2xl font-extrabold text-white">Total</dt>
-                    <dd className="text-3xl font-black bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent font-mono">₹{totals.total}</dd>
+                    <dd className="text-3xl font-black bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent font-mono">Rs. {totals.total}</dd>
                   </div>
                 </dl>
                 {/* Template & watermark summary */}

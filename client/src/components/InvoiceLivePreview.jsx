@@ -2,9 +2,8 @@
 import React, { useMemo } from 'react';
 import { getAssetUrl } from '../services/api';
 
-// Matches pdf.generator.js formatCurr exactly
 function fmt(n) {
-  return 'Rs.' + (parseFloat(n) || 0).toLocaleString('en-IN', {
+  return 'Rs. ' + (parseFloat(n) || 0).toLocaleString('en-IN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -35,7 +34,6 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
     [clients, form.clientId]
   );
 
-  // ── Calculations (mirror pdf.generator.js) ──────────────────────────────
   const subtotal    = (form.items || []).reduce(
     (s, i) => s + (parseFloat(i.quantity) || 0) * (parseFloat(i.unitPrice) || 0), 0
   );
@@ -44,16 +42,11 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
   const taxable     = subtotal - discAmt;
   const taxVal      = parseFloat(form.tax) || 0;
   const hasTax      = taxVal > 0;
-  // In the PDF, tax is stored as the tax *amount* (not %), derive the percent:
   const taxPercent  = hasTax && taxable > 0 ? Math.round((taxVal / taxable) * 100) : 0;
   const halfTax     = taxPercent / 2;
   const taxAmt      = hasTax ? taxVal : 0;
   const total       = taxable + taxAmt;
 
-  // ── Template colours (same defaults as pdf.generator.js) ────────────────
-  // Settings modal stores colors as tableColor / primaryColor.
-  // Fall back to headerColor / accentColor for backwards compatibility,
-  // then to per-template defaults if nothing is set.
   const template    = settings.templateId || 'classic';
   const navy        = settings.tableColor   || settings.headerColor ||
     (template === 'minimal' ? '#111827' : template === 'bold' ? '#1E293B' : '#2563EB');
@@ -62,7 +55,6 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
 
   const isCustom = template === 'custom' && !!settings.customTemplatePreview;
 
-  // Helper: convert hex to rgba for semi-transparent overlays
   const hexToRgba = (hex, alpha) => {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
@@ -70,15 +62,11 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
     return `rgba(${r},${g},${b},${alpha})`;
   };
 
-  // Semi-transparent navy for blending custom bg through structural elements
   const navyBg      = isCustom ? hexToRgba(navy, 0.82) : navy;
-  const rowEvenBg   = isCustom ? 'rgba(248,250,252,0.6)' : '#F8FAFC';
-  const rowOddBg    = isCustom ? 'rgba(255,255,255,0.5)' : '#FFFFFF';
-  // Text shadow for readability on custom backgrounds
   const bodyShadow  = isCustom ? '0 0 4px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.7)' : 'none';
 
   const documentType  = form.documentType || 'invoice';
-  const documentLabel = documentType === 'quotation' ? 'QUOTATION' : 'TAX INVOICE';
+  const documentLabel = documentType === 'quotation' ? 'QUOTATION' : 'INVOICE';
   const invoiceNumber = `${documentType === 'quotation' ? 'QUO' : (settings.invoicePrefix || 'INV')}-0001`;
 
   const logoSrc       = settings.logoPreview || getAssetUrl(settings.logoUrl);
@@ -86,17 +74,15 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
 
   const visibleItems = (form.items || []).filter(i => i.description);
 
-  // Bank details
   const bd    = settings;
-  const hasBD = !!(bd.accountHolderName || bd.accountNumber || bd.ifsc || bd.upiId);
+  const hasBD = !!(bd.accountHolderName || bd.accountNumber || bd.ifsc || bd.upiId || bd.panNumber);
   const bdRows = [];
-  if (bd.accountHolderName) bdRows.push(['Account Name', bd.accountHolderName]);
-  if (bd.accountNumber)     bdRows.push(['Account No.',  bd.accountNumber]);
-  if (bd.ifsc)              bdRows.push(['IFSC Code',    bd.ifsc]);
-  if (bd.upiId)             bdRows.push(['UPI ID',       bd.upiId]);
+  if (bd.accountHolderName) bdRows.push(['Name', bd.accountHolderName]);
+  if (bd.accountNumber)     bdRows.push(['Account',  bd.accountNumber]);
   if (bd.panNumber)         bdRows.push(['PAN',          bd.panNumber]);
+  if (bd.ifsc)              bdRows.push(['IFS code',    bd.ifsc]);
+  if (bd.upiId)             bdRows.push(['UPI ID',       bd.upiId]);
 
-  // Table columns — mirrors pdf.generator.js cols exactly
   const cols = hasTax ? [
     { label: 'Description',        align: 'left',   flex: '2.2' },
     { label: 'SAC',                align: 'center', flex: '0.7' },
@@ -115,8 +101,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
   const thAlign = { left: 'text-left', center: 'text-center', right: 'text-right' };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-inner text-[9px] text-slate-800 font-sans relative">
-      {/* ── CUSTOM TEMPLATE BACKGROUND ── */}
+    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-inner text-[9px] text-slate-800 font-sans relative flex flex-col min-h-full">
       {template === 'custom' && settings.customTemplatePreview && (
         <div 
           className="absolute inset-0 z-0 opacity-100" 
@@ -128,12 +113,8 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
         />
       )}
 
-      {/* ── 1. HEADER BAR ─────────────────────────────────────────────── */}
-      <div
-        className="flex items-center justify-between px-5 py-3 relative z-10"
-        style={{ background: isCustom ? 'transparent' : navy, minHeight: 72, textShadow: isCustom ? bodyShadow : 'none' }}
-      >
-        {/* Left: logo + company */}
+      {/* 1. HEADER BAR */}
+      <div className="flex items-center justify-between px-5 py-3 relative z-10" style={{ background: isCustom ? 'transparent' : navy, minHeight: 72, textShadow: isCustom ? bodyShadow : 'none' }}>
         <div className="flex items-center gap-2.5">
           {logoSrc && (
             <img src={logoSrc} alt="logo" className="h-10 w-10 object-contain rounded" />
@@ -149,13 +130,12 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
             )}
           </div>
         </div>
-        {/* Right: document label */}
         <div className="text-[22px] font-black tracking-wide" style={{ color: isCustom ? navy : 'white' }}>
           {documentLabel}
         </div>
       </div>
 
-      {/* ── 2. META ROW ───────────────────────────────────────────────── */}
+      {/* 2. META ROW */}
       <div className="flex justify-end px-5 pt-2 pb-1 gap-4 text-[8px] relative z-10" style={{ textShadow: bodyShadow }}>
         <div className="text-right space-y-0.5">
           <div className="text-slate-500">{invoiceNumber}</div>
@@ -166,63 +146,34 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
                   .toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
               : '—'}
           </div>
-          {form.watermark && (
-            <div
-              className="inline-block px-2 py-0.5 text-[7.5px] font-bold uppercase mt-1"
-              style={{ background: `${accent}22`, color: accent }}
-            >
-              {form.watermark}
-            </div>
-          )}
         </div>
       </div>
 
-      {/* ── 3. DIVIDER ────────────────────────────────────────────────── */}
       <div className="mx-5 border-t border-slate-200" />
 
-      {/* ── 4. FROM / BILL TO ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 px-5 pt-2 pb-3 gap-4 relative z-10" style={{ borderBottom: '1px solid #E2E8F0', textShadow: bodyShadow }}>
-        {/* FROM */}
-        <div className="pr-4" style={{ borderRight: '1px solid #E2E8F0' }}>
-          <div className="text-[7px] font-bold tracking-widest text-slate-400 mb-1">FROM</div>
-          <div className="font-bold text-[11px] text-slate-900">
-            {settings.companyName || 'Invoicefy'}
-          </div>
-          {form.yourGST && (
-            <div className="font-bold text-[8px] mt-0.5" style={{ color: navy }}>
-              GST: {form.yourGST}
-            </div>
-          )}
-          {settings.companyAddress && (
-            <div className="text-[8px] text-slate-500 mt-0.5">{settings.companyAddress}</div>
-          )}
+      {/* 3. BILL TO / FROM */}
+      <div className="grid grid-cols-2 px-5 pt-4 pb-4 gap-4 relative z-10" style={{ textShadow: bodyShadow }}>
+        <div className="pr-4">
+          <div className="text-[12px] font-black text-black mb-1.5">BILL TO:</div>
+          <div className="text-[10px] text-black"><span className="font-bold">Name: </span>{client?.name || '— Client Name —'}</div>
+          {client?.address && <div className="text-[9px] text-black mt-1 whitespace-pre-wrap"><span className="font-bold">Address: </span>{client.address}</div>}
+          {client?.email && <div className="text-[9px] text-black mt-1"><span className="font-bold">Email: </span>{client.email}</div>}
+          {client?.phone && <div className="text-[9px] text-black mt-0.5"><span className="font-bold">Ph No: </span>{client.phone}</div>}
+          {(form.clientGST || client?.gstNumber) && <div className="text-[9px] text-black mt-1"><span className="font-bold">GSTIN: </span>{form.clientGST || client.gstNumber}</div>}
         </div>
-        {/* BILL TO */}
         <div>
-          <div className="text-[7px] font-bold tracking-widest text-slate-400 mb-1">BILL TO</div>
-          <div className="font-bold text-[11px] text-slate-900">
-            {client?.name || '— Client Name —'}
-          </div>
-          {(form.clientGST || client?.gstNumber) && (
-            <div className="font-bold text-[8px] mt-0.5" style={{ color: navy }}>
-              GST: {form.clientGST || client?.gstNumber}
-            </div>
-          )}
-          {[client?.address, client?.email, client?.phone].filter(Boolean).length > 0 && (
-            <div className="text-[8px] text-slate-500 mt-0.5">
-              {[client?.address, client?.email, client?.phone].filter(Boolean).join(' | ')}
-            </div>
-          )}
+          <div className="text-[12px] font-black text-black mb-1.5">FROM:</div>
+          <div className="text-[10px] text-black"><span className="font-bold">Name: </span>{settings.companyName || settings.name || 'Invoicefy'}</div>
+          {(settings.companyAddress || settings.address) && <div className="text-[9px] text-black mt-1 whitespace-pre-wrap"><span className="font-bold">Address: </span>{settings.companyAddress || settings.address}</div>}
+          {(settings.companyEmail || settings.email) && <div className="text-[9px] text-black mt-1"><span className="font-bold">Email: </span>{settings.companyEmail || settings.email}</div>}
+          {(settings.companyPhone || settings.phone) && <div className="text-[9px] text-black mt-0.5"><span className="font-bold">Ph No: </span>{settings.companyPhone || settings.phone}</div>}
+          {form.yourGST && <div className="text-[9px] text-black mt-1"><span className="font-bold">GSTIN: </span>{form.yourGST}</div>}
         </div>
       </div>
 
-      {/* ── 5. ITEMS TABLE ───────────────────────────────────────────── */}
-      <div className="mx-5 mt-3 relative z-10" style={{ border: '1px solid #E2E8F0' }}>
-        {/* Header row */}
-        <div
-          className="flex text-white text-[8.5px] font-bold"
-          style={{ background: navyBg, padding: '12px 8px' }}
-        >
+      {/* 4. ENLARGED ITEMS TABLE */}
+      <div className="mx-5 mt-3 relative z-10 flex flex-col" style={{ border: '1px solid #000' }}>
+        <div className="flex text-white text-[9px] font-bold tracking-widest" style={{ background: navyBg, padding: '12px 10px' }}>
           {cols.map((col, ci) => (
             <div key={ci} style={{ flex: col.flex }} className={thAlign[col.align]}>
               {col.label.split('\n').map((l, li) => <div key={li}>{l}</div>)}
@@ -230,158 +181,112 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
           ))}
         </div>
 
-        {/* Data rows */}
-        {visibleItems.length === 0 ? (
-          <div className="text-center py-4 text-slate-400 italic text-[8px]">No items added yet…</div>
-        ) : visibleItems.map((item, idx) => {
-          const qty       = parseFloat(item.quantity) || 0;
-          const unitPrice = parseFloat(item.unitPrice) || 0;
-          const lineBase  = qty * unitPrice;
-          const cgst      = hasTax ? lineBase * (halfTax / 100) : 0;
-          const sgst      = cgst;
-          const lineTotal = hasTax ? lineBase + cgst + sgst : lineBase;
+        {/* This wrapper forces the empty space below items to stretch down */}
+        <div className="flex flex-col" style={{ minHeight: '250px' }}>
+          {visibleItems.length === 0 ? (
+            <div className="text-center py-4 text-slate-400 italic text-[8px]">No items added yet…</div>
+          ) : visibleItems.map((item, idx) => {
+            const qty       = parseFloat(item.quantity) || 0;
+            const unitPrice = parseFloat(item.unitPrice) || 0;
+            const lineBase  = qty * unitPrice;
+            const cgst      = hasTax ? lineBase * (halfTax / 100) : 0;
+            const sgst      = cgst;
+            const lineTotal = hasTax ? lineBase + cgst + sgst : lineBase;
 
-          return (
-            <div
-              key={idx}
-              className="flex items-center text-[8.5px] text-slate-700"
-              style={{
-                padding: '12px 8px',
-                background: idx % 2 === 0 ? rowEvenBg : rowOddBg,
-                borderBottom: showDividers ? '1px solid #E2E8F0' : 'none',
-                textShadow: bodyShadow,
-              }}
-            >
-              {hasTax ? (
-                <>
-                  <div style={{ flex: cols[0].flex }} className="text-left">{item.description}</div>
-                  <div style={{ flex: cols[1].flex }} className="text-center">{item.hsn || '-'}</div>
-                  <div style={{ flex: cols[2].flex }} className="text-right">{fmt(lineBase)}</div>
-                  <div style={{ flex: cols[3].flex }} className="text-right">{fmt(cgst)}</div>
-                  <div style={{ flex: cols[4].flex }} className="text-right">{fmt(sgst)}</div>
-                  <div style={{ flex: cols[5].flex }} className="text-right font-semibold">{fmt(lineTotal)}</div>
-                </>
-              ) : (
-                <>
-                  <div style={{ flex: cols[0].flex }} className="text-left">
-                    {item.description}{item.hsn ? ` (${item.hsn})` : ''}
-                  </div>
-                  <div style={{ flex: cols[1].flex }} className="text-center">{item.hsn || '-'}</div>
-                  <div style={{ flex: cols[2].flex }} className="text-center">{qty}</div>
-                  <div style={{ flex: cols[3].flex }} className="text-right">{fmt(unitPrice)}</div>
-                  <div style={{ flex: cols[4].flex }} className="text-right font-semibold">{fmt(lineTotal)}</div>
-                </>
-              )}
-            </div>
-          );
-        })}
+            return (
+              <div
+                key={idx}
+                className="flex items-center text-[9px] text-slate-900"
+                style={{
+                  padding: '12px 10px',
+                  background: isCustom ? 'transparent' : '#fff',
+                  borderBottom: showDividers ? '1px solid #E2E8F0' : 'none',
+                  textShadow: bodyShadow,
+                }}
+              >
+                {hasTax ? (
+                  <>
+                    <div style={{ flex: cols[0].flex }} className="text-left">{idx + 1}. {item.description}</div>
+                    <div style={{ flex: cols[1].flex }} className="text-center">{item.hsn || '-'}</div>
+                    <div style={{ flex: cols[2].flex }} className="text-right">{fmt(lineBase)}</div>
+                    <div style={{ flex: cols[3].flex }} className="text-right">{fmt(cgst)}</div>
+                    <div style={{ flex: cols[4].flex }} className="text-right">{fmt(sgst)}</div>
+                    <div style={{ flex: cols[5].flex }} className="text-right font-semibold">{fmt(lineTotal)}</div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ flex: cols[0].flex }} className="text-left">
+                      {idx + 1}. {item.description}{item.hsn ? ` (${item.hsn})` : ''}
+                    </div>
+                    <div style={{ flex: cols[1].flex }} className="text-center">{item.hsn || '-'}</div>
+                    <div style={{ flex: cols[2].flex }} className="text-center">{qty}</div>
+                    <div style={{ flex: cols[3].flex }} className="text-right">{fmt(unitPrice)}</div>
+                    <div style={{ flex: cols[4].flex }} className="text-right font-semibold">{fmt(lineTotal)}</div>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* ── 6. TOTALS + BANK SIDE BY SIDE ────────────────────────────── */}
-      <div className="flex gap-3 px-5 pt-7 pb-3 items-start relative z-10" style={{ textShadow: bodyShadow }}>
-
-        {/* LEFT: Bank / Payment details */}
-        {hasBD && (
-          <div className="flex-1 min-w-0">
-            <div className="text-[8.5px] font-bold mb-1.5" style={{ color: accent }}>
-              PAYMENT DETAILS
-            </div>
-            {bdRows.map(([label, value]) => (
-              <div key={label} className="flex gap-1 mb-0.5">
-                <span className="text-[8.5px] text-slate-400 w-20 shrink-0">{label}:</span>
-                <span className="text-[8.5px] font-bold text-slate-700">{value}</span>
+      {/* 5. PAYMENT INFO & TOTALS SIDE BY SIDE */}
+      <div className="flex justify-between px-5 pt-6 pb-6 items-start relative z-10 flex-grow" style={{ textShadow: bodyShadow }}>
+        
+        {/* LEFT: Payment Information */}
+        <div className="w-[50%] pr-4">
+          {hasBD && (
+            <>
+              <h3 className="font-extrabold text-[11px] mb-3 tracking-wide text-black">PAYMENT INFORMATION:</h3>
+              <div className="space-y-1.5 flex flex-col">
+                {bdRows.map(([label, value]) => (
+                  <div key={label} className="text-[10px] text-black">
+                    <span className="font-bold">{label}: </span> 
+                    <span className="font-normal">{value}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-        {!hasBD && <div className="flex-1" />}
+            </>
+          )}
+        </div>
 
-        {/* RIGHT: Totals box */}
-        <div className="shrink-0" style={{ width: 200, border: '1px solid #E2E8F0', padding: '6px 8px' }}>
-          <div className="space-y-1 mb-1">
+        {/* RIGHT: Subtotal & Total Boxes */}
+        <div className="w-[45%] flex flex-col gap-3">
+          {/* Subtotal Outline Box */}
+          <div className="border border-black px-4 py-3 space-y-2 text-[10px] text-black bg-white">
             {hasTax ? (
               <>
-                <div className="flex justify-between text-[8.5px] text-slate-500">
-                  <span>Taxable Amount:</span><span>{fmt(taxable)}</span>
-                </div>
-                {discPct > 0 && (
-                  <div className="flex justify-between text-[8.5px] text-slate-500">
-                    <span>Discount ({discPct}%):</span><span>- {fmt(discAmt)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-[8.5px] text-slate-500">
-                  <span>CGST ({halfTax}%):</span><span>{fmt(taxAmt / 2)}</span>
-                </div>
-                <div className="flex justify-between text-[8.5px] text-slate-500">
-                  <span>SGST ({halfTax}%):</span><span>{fmt(taxAmt / 2)}</span>
-                </div>
+                <div className="flex justify-between"><span>Taxable Amount:</span><span>{fmt(taxable)}</span></div>
+                {discPct > 0 && <div className="flex justify-between"><span>Discount:</span><span>- {fmt(discAmt)}</span></div>}
+                <div className="flex justify-between"><span>CGST ({halfTax}%):</span><span>{fmt(taxAmt / 2)}</span></div>
+                <div className="flex justify-between"><span>SGST ({halfTax}%):</span><span>{fmt(taxAmt / 2)}</span></div>
               </>
             ) : (
               <>
-                <div className="flex justify-between text-[8.5px] text-slate-500">
-                  <span>Subtotal:</span><span>{fmt(subtotal)}</span>
-                </div>
-                {discPct > 0 && (
-                  <div className="flex justify-between text-[8.5px] text-slate-500">
-                    <span>Discount ({discPct}%):</span><span>- {fmt(discAmt)}</span>
-                  </div>
-                )}
-                {taxVal > 0 && (
-                  <div className="flex justify-between text-[8.5px] text-slate-500">
-                    <span>Tax:</span><span>+ {fmt(taxAmt)}</span>
-                  </div>
-                )}
+                <div className="flex justify-between"><span>Sub Total:</span><span>{fmt(subtotal)}</span></div>
+                {discPct > 0 && <div className="flex justify-between"><span>Discount:</span><span>- {fmt(discAmt)}</span></div>}
+                {taxVal > 0 && <div className="flex justify-between"><span>Tax:</span><span>+ {fmt(taxAmt)}</span></div>}
               </>
             )}
           </div>
 
-          {/* Thin separator */}
-          <div className="border-t border-slate-200 mb-1" />
-
-          {/* GRAND TOTAL */}
-          <div
-            className="flex justify-between items-center text-white font-bold text-[10px]"
-            style={{ background: navyBg, padding: '5px 8px' }}
+          {/* Solid Grand Total Box */}
+          <div 
+            className="flex justify-between items-center text-white font-bold text-[12px] px-4 py-3 tracking-widest"
+            style={{ background: navyBg }}
           >
-            <span>GRAND TOTAL</span>
-            <span>{fmt(total)}</span>
+            <span>TOTAL:</span>
+            <span>{fmt(total)}/-</span>
           </div>
         </div>
       </div>
 
-      {/* ── 6b. SIGNATURE BLOCK ── */}
-      <div className="px-5 pb-4 flex justify-end relative z-10" style={{ minHeight: 80 }}>
-        <div
-          className="text-center"
-          style={{
-            width: 160,
-            borderTop: `1px solid #E2E8F0`,
-            paddingTop: 8,
-            marginTop: 'auto',
-          }}
-        >
-          <div className="text-[9.5px] font-bold leading-tight" style={{ color: navy }}>
-            {settings.companyName || 'Invoicefy'}
-          </div>
-          <div className="text-[7.5px] mt-1 text-slate-400">
-            Authorized Signatory
-          </div>
-          <div className="text-[7px] mt-0.5" style={{ color: accent }}>
-            For {settings.companyName || 'Invoicefy'}
-          </div>
-        </div>
-      </div>
-
-      {/* ── 7. FOOTER BAR ────────────────────────────────────────────── */}
-      <div
-        className="px-5 flex items-center justify-center relative z-10"
-        style={{ background: isCustom ? 'transparent' : navy, minHeight: 32, textShadow: isCustom ? bodyShadow : 'none' }}
-      >
+      {/* 6. FOOTER BAR */}
+      <div className="px-5 mt-auto flex items-center justify-center relative z-10" style={{ background: isCustom ? 'transparent' : navy, minHeight: 32, textShadow: isCustom ? bodyShadow : 'none' }}>
         <div className="text-[7.5px] text-center" style={{ color: isCustom ? '#1E293B' : '#CBD5E1' }}>
           {form.disclaimer || 'Payment expected within 45 days from invoice date.'}
         </div>
       </div>
-
     </div>
   );
 }
