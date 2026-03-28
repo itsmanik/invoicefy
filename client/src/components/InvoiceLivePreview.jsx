@@ -117,7 +117,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       <div className="flex items-center justify-between px-5 py-3 relative z-10" style={{ background: isCustom ? 'transparent' : navy, minHeight: 72, textShadow: isCustom ? bodyShadow : 'none' }}>
         <div className="flex items-center gap-2.5">
           {logoSrc && (
-            <img src={logoSrc} alt="logo" className="h-10 w-10 object-contain rounded" />
+            <img src={logoSrc} alt="logo" className="h-12 w-12 object-contain rounded" />
           )}
           <div>
             <div className="text-[20px] font-bold leading-tight" style={{ color: isCustom ? navy : 'white' }}>

@@ -7,7 +7,7 @@ const formatCurr = (num) =>
   'Rs. ' + Number(num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const getDocumentLabel = (invoice) =>
-  invoice.documentType === 'quotation' ? 'QUOTATION' : 'TAX INVOICE';
+  invoice.documentType === 'quotation' ? 'QUOTATION' : 'INVOICE';
 
 const DEFAULT_TEMPLATE_SETTINGS = {
   classic: { headerColor: '#2563EB', accentColor: '#1d4ed8' },
@@ -75,7 +75,7 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   const HEADER_H = 90;
   if (!backgroundSource) doc.rect(0, 0, PAGE_W, HEADER_H).fill(navy);
 
-  const logoSize   = 44;
+  const logoSize   = 50;
   const logoOffset = drawLogo(doc, logoSource, MARGIN, (HEADER_H - logoSize) / 2, logoSize);
   const compX      = MARGIN + logoOffset;
 
