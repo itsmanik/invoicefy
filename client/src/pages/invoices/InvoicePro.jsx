@@ -16,7 +16,7 @@ const DEFAULT_SETTINGS = {
   compactMode: false, showRowDividers: true,
   logoX: 0, logoY: 0, marginT: 0, marginB: 0,
   accountHolderName: '', accountNumber: '', ifsc: '', panNumber: '',
-  invoicePrefix: 'INV', bgWatermark: false,
+  invoicePrefix: 'INV', bgWatermark: false, swapHeaderLayout: false,
 };
 
 const WATERMARK_PRESETS = ['', 'DRAFT', 'PAID', 'CONFIDENTIAL', 'SAMPLE', 'VOID'];
@@ -147,6 +147,8 @@ const InvoicePro = () => {
           showRowDividers: settings.showRowDividers,
           logoUrl: settings.logoUrl,
           customTemplateUrl: settings.customTemplateUrl,
+          contactsAtBottom: settings.contactsAtBottom,
+          swapHeaderLayout: settings.swapHeaderLayout,
         },
       });
       toast.success(`${form.documentType === 'quotation' ? 'Quotation' : 'Invoice'} created!`);

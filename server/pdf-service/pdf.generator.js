@@ -28,6 +28,8 @@ const getTemplateSettings = (invoice, template) => {
     headerColor:     /^#[0-9A-Fa-f]{6}$/.test(saved.headerColor || '') ? saved.headerColor : defaults.headerColor,
     accentColor:     /^#[0-9A-Fa-f]{6}$/.test(saved.accentColor || '') ? saved.accentColor : defaults.accentColor,
     compactMode:     Boolean(saved.compactMode),
+    contactsAtBottom:Boolean(saved.contactsAtBottom),
+    swapHeaderLayout:Boolean(saved.swapHeaderLayout),
     showRowDividers: saved.showRowDividers !== false,
     customTemplateUrl: saved.customTemplateUrl || '',
   };
@@ -76,19 +78,36 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   if (!backgroundSource) doc.rect(0, 0, PAGE_W, HEADER_H).fill(navy);
 
   const logoSize   = 50;
-  const logoOffset = drawLogo(doc, logoSource, MARGIN, (HEADER_H - logoSize) / 2, logoSize);
-  const compX      = MARGIN + logoOffset;
-
   const headerTextColor = backgroundSource ? navy : white;
   const headerAddrColor = backgroundSource ? '#334155' : '#CBD5E1';
 
-  doc.fillColor(headerTextColor).fontSize(26).font('Helvetica-Bold')
-     .text(settings.companyName || 'Invoicefy', compX, 20, { width: 240, lineBreak: false });
-  doc.font('Helvetica').fontSize(8).fillColor(headerAddrColor);
-  if (settings.companyAddress) doc.text(settings.companyAddress, compX, 54, { width: 240, lineBreak: false });
+  if (settings.swapHeaderLayout) {
+    const logoOffset = drawLogo(doc, logoSource, PAGE_W - MARGIN - logoSize, (HEADER_H - logoSize) / 2, logoSize);
+    const textWidth = 240;
+    const compX = PAGE_W - MARGIN - (logoSource ? logoSize + 10 : 0) - textWidth;
+    
+    doc.fillColor(headerTextColor).fontSize(26).font('Helvetica-Bold')
+       .text(settings.companyName || 'Invoicefy', compX, 20, { width: textWidth, align: 'right', lineBreak: false });
+    doc.font('Helvetica').fontSize(8).fillColor(headerAddrColor);
+    if (settings.companyAddress) doc.text(settings.companyAddress, compX, 54, { width: textWidth, align: 'right', lineBreak: false });
 
-  doc.fillColor(headerTextColor).fontSize(26).font('Helvetica-Bold')
-     .text(getDocumentLabel(invoice), MARGIN, 28, { width: CONTENT, align: 'right', lineBreak: false });
+    // Document Label on left
+    doc.fillColor(headerTextColor).fontSize(26).font('Helvetica-Bold')
+       .text(getDocumentLabel(invoice), MARGIN, 28, { width: CONTENT, align: 'left', lineBreak: false });
+  } else {
+    // Default Layout
+    const logoOffset = drawLogo(doc, logoSource, MARGIN, (HEADER_H - logoSize) / 2, logoSize);
+    const compX      = MARGIN + logoOffset;
+
+    doc.fillColor(headerTextColor).fontSize(26).font('Helvetica-Bold')
+       .text(settings.companyName || 'Invoicefy', compX, 20, { width: 240, align: 'left', lineBreak: false });
+    doc.font('Helvetica').fontSize(8).fillColor(headerAddrColor);
+    if (settings.companyAddress) doc.text(settings.companyAddress, compX, 54, { width: 240, align: 'left', lineBreak: false });
+
+    // Document Label on right
+    doc.fillColor(headerTextColor).fontSize(26).font('Helvetica-Bold')
+       .text(getDocumentLabel(invoice), MARGIN, 28, { width: CONTENT, align: 'right', lineBreak: false });
+  }
 
   // 2. META
   const META_Y      = HEADER_H + 8;
@@ -96,42 +115,53 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   const fmtDate     = (d) => d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
   doc.fillColor(mutedText).fontSize(8.5).font('Helvetica')
-     .text(invoice.invoiceNumber, MARGIN, META_Y, { width: CONTENT, align: 'right', lineBreak: false })
-     .text('Date: ' + fmtDate(invoiceDate), MARGIN, META_Y + 12, { width: CONTENT, align: 'right', lineBreak: false });
+     .text(invoice.invoiceNumber, MARGIN, META_Y, { width: CONTENT, align: settings.swapHeaderLayout ? 'left' : 'right', lineBreak: false })
+     .text('Date: ' + fmtDate(invoiceDate), MARGIN, META_Y + 12, { width: CONTENT, align: settings.swapHeaderLayout ? 'left' : 'right', lineBreak: false });
 
   const DIVIDER_Y = META_Y + 40;
   doc.strokeColor(borderColor).lineWidth(0.8).moveTo(MARGIN, DIVIDER_Y).lineTo(PAGE_W - MARGIN, DIVIDER_Y).stroke();
 
-  // 3. BILL TO / FROM
-  const INFO_Y = DIVIDER_Y + 10;
-  const COL_W  = CONTENT / 2 - 10;
-  const COL2_X = MARGIN + COL_W + 20;
+  // 3. BILL TO / FROM (Wrapped in closure for re-ordering)
+  const drawContacts = (startY) => {
+    const INFO_Y = startY;
+    const COL_W  = CONTENT / 2 - 10;
+    const COL2_X = MARGIN + COL_W + 20;
 
-  doc.fillColor('#000').fontSize(12).font('Helvetica-Bold')
-     .text('BILL TO:', MARGIN,  INFO_Y, { lineBreak: false })
-     .text('FROM:', COL2_X, INFO_Y, { lineBreak: false });
+    doc.fillColor('#000').fontSize(12).font('Helvetica-Bold')
+       .text('BILL TO:', MARGIN,  INFO_Y, { lineBreak: false })
+       .text('FROM:', COL2_X, INFO_Y, { lineBreak: false });
 
-  doc.fillColor('#000').fontSize(10);
-  
-  // Left: Customer details
-  doc.font('Helvetica-Bold').text('Name: ', MARGIN, INFO_Y + 16, { continued: true, width: COL_W }).font('Helvetica').text(client && client.name ? client.name : '— Client Name —');
-  let docYLeft = doc.y;
-  if (client && client.address) { doc.font('Helvetica-Bold').text('Address: ', MARGIN, docYLeft + 2, { continued: true, width: COL_W }).font('Helvetica').text(client.address); docYLeft = doc.y; }
-  if (client && client.email) { doc.font('Helvetica-Bold').text('Email: ', MARGIN, docYLeft + 2, { continued: true, width: COL_W }).font('Helvetica').text(client.email); docYLeft = doc.y; }
-  if (client && client.phone) { doc.font('Helvetica-Bold').text('Ph No: ', MARGIN, docYLeft + 2, { continued: true, width: COL_W }).font('Helvetica').text(client.phone); docYLeft = doc.y; }
-  const clientGst = invoice.clientGST || (client && client.gstNumber);
-  if (clientGst) { doc.font('Helvetica-Bold').text('GSTIN: ', MARGIN, docYLeft + 2, { continued: true, width: COL_W }).font('Helvetica').text(clientGst); docYLeft = doc.y; }
+    doc.fillColor('#000').fontSize(10);
+    
+    // Left: Customer details
+    doc.font('Helvetica-Bold').text('Name: ', MARGIN, INFO_Y + 16, { continued: true, width: COL_W }).font('Helvetica').text(client && client.name ? client.name : '— Client Name —');
+    let yL = doc.y;
+    if (client && client.address) { doc.font('Helvetica-Bold').text('Address: ', MARGIN, yL + 2, { continued: true, width: COL_W }).font('Helvetica').text(client.address); yL = doc.y; }
+    if (client && client.email) { doc.font('Helvetica-Bold').text('Email: ', MARGIN, yL + 2, { continued: true, width: COL_W }).font('Helvetica').text(client.email); yL = doc.y; }
+    if (client && client.phone) { doc.font('Helvetica-Bold').text('Ph No: ', MARGIN, yL + 2, { continued: true, width: COL_W }).font('Helvetica').text(client.phone); yL = doc.y; }
+    const clientGst = invoice.clientGST || (client && client.gstNumber);
+    if (clientGst) { doc.font('Helvetica-Bold').text('GSTIN: ', MARGIN, yL + 2, { continued: true, width: COL_W }).font('Helvetica').text(clientGst); yL = doc.y; }
 
-  // Right: Seller details
-  doc.font('Helvetica-Bold').text('Name: ', COL2_X, INFO_Y + 16, { continued: true, width: COL_W }).font('Helvetica').text(settings.companyName || 'Invoicefy');
-  let docYRight = doc.y;
-  if (settings.companyAddress) { doc.font('Helvetica-Bold').text('Address: ', COL2_X, docYRight + 2, { continued: true, width: COL_W }).font('Helvetica').text(settings.companyAddress); docYRight = doc.y; }
-  if (settings.companyEmail) { doc.font('Helvetica-Bold').text('Email: ', COL2_X, docYRight + 2, { continued: true, width: COL_W }).font('Helvetica').text(settings.companyEmail); docYRight = doc.y; }
-  if (settings.companyPhone) { doc.font('Helvetica-Bold').text('Ph No: ', COL2_X, docYRight + 2, { continued: true, width: COL_W }).font('Helvetica').text(settings.companyPhone); docYRight = doc.y; }
-  if (invoice.yourGST) { doc.font('Helvetica-Bold').text('GSTIN: ', COL2_X, docYRight + 2, { continued: true, width: COL_W }).font('Helvetica').text(invoice.yourGST); docYRight = doc.y; }
+    // Right: Seller details
+    doc.font('Helvetica-Bold').text('Name: ', COL2_X, INFO_Y + 16, { continued: true, width: COL_W }).font('Helvetica').text(settings.companyName || 'Invoicefy');
+    let yR = doc.y;
+    if (settings.companyAddress) { doc.font('Helvetica-Bold').text('Address: ', COL2_X, yR + 2, { continued: true, width: COL_W }).font('Helvetica').text(settings.companyAddress); yR = doc.y; }
+    if (settings.companyEmail) { doc.font('Helvetica-Bold').text('Email: ', COL2_X, yR + 2, { continued: true, width: COL_W }).font('Helvetica').text(settings.companyEmail); yR = doc.y; }
+    if (settings.companyPhone) { doc.font('Helvetica-Bold').text('Ph No: ', COL2_X, yR + 2, { continued: true, width: COL_W }).font('Helvetica').text(settings.companyPhone); yR = doc.y; }
+    if (invoice.yourGST) { doc.font('Helvetica-Bold').text('GSTIN: ', COL2_X, yR + 2, { continued: true, width: COL_W }).font('Helvetica').text(invoice.yourGST); yR = doc.y; }
+
+    return Math.max(yL, yR);
+  };
+
+  let currentY = DIVIDER_Y + 10;
+  if (!settings.contactsAtBottom) {
+    currentY = drawContacts(currentY) + 20;
+  } else {
+    currentY += 10;
+  }
 
   // 4. ITEMS TABLE
-  const TABLE_Y = Math.max(docYLeft, docYRight) + 20;
+  const TABLE_Y = currentY;
 
   const ROW_H   = 32;
 
@@ -218,6 +248,7 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   // Left: Payment Information
   const bd = invoice.bankDetails || {};
   const hasBD = bd.accountName || bd.bankName || bd.accountNumber || bd.ifsc || bd.panNumber;
+  let finalBdY = BLOCK_Y;
   if (hasBD) {
     let bdY = BLOCK_Y;
     doc.fillColor('#000').fontSize(11).font('Helvetica-Bold').text('PAYMENT INFORMATION:', MARGIN, bdY);
@@ -234,6 +265,7 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
     if (bd.panNumber)                  drawBdRow('PAN', bd.panNumber);
     if (bd.ifsc)                       drawBdRow('IFS code', bd.ifsc);
     if (bd.upiId)                      drawBdRow('UPI ID', bd.upiId);
+    finalBdY = bdY;
   }
 
   // Right: Totals Side
@@ -271,6 +303,13 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   doc.fillColor(white).fontSize(12).font('Helvetica-Bold')
      .text('TOTAL:', TOT_X + 12, grandTotY + 10, { width: 80, align: 'left', lineBreak: false })
      .text(formatCurr(invoice.total) + '/-', TOT_X, grandTotY + 10, { width: TOT_W - 12, align: 'right', lineBreak: false });
+
+  // Optional: Draw contacts at bottom
+  if (settings.contactsAtBottom) {
+    let nextY = Math.max(hasBD ? finalBdY : BLOCK_Y, grandTotY + 40) + 15;
+    doc.strokeColor(borderColor).lineWidth(0.8).moveTo(MARGIN, nextY).lineTo(PAGE_W - MARGIN, nextY).stroke();
+    drawContacts(nextY + 15);
+  }
 
   // 6. FOOTER
   const FOOTER_H = 36;

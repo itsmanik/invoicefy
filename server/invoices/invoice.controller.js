@@ -73,6 +73,8 @@ const sanitizeTemplateSettings = (template, settings = {}) => {
     headerColor: /^#[0-9A-Fa-f]{6}$/.test(value.headerColor || '') ? value.headerColor : fallback.headerColor,
     accentColor: /^#[0-9A-Fa-f]{6}$/.test(value.accentColor || '') ? value.accentColor : fallback.accentColor,
     compactMode: Boolean(value.compactMode),
+    contactsAtBottom: Boolean(value.contactsAtBottom),
+    swapHeaderLayout: Boolean(value.swapHeaderLayout),
     showRowDividers: value.showRowDividers !== false,
   };
 };

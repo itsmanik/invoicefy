@@ -114,8 +114,8 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       )}
 
       {/* 1. HEADER BAR */}
-      <div className="flex items-center justify-between px-5 py-3 relative z-10" style={{ background: isCustom ? 'transparent' : navy, minHeight: 72, textShadow: isCustom ? bodyShadow : 'none' }}>
-        <div className="flex items-center gap-2.5">
+      <div className={`flex items-center justify-between px-5 py-3 relative z-10 ${settings.swapHeaderLayout ? 'flex-row-reverse' : ''}`} style={{ background: isCustom ? 'transparent' : navy, minHeight: 72, textShadow: isCustom ? bodyShadow : 'none' }}>
+        <div className={`flex items-center gap-2.5 ${settings.swapHeaderLayout ? 'flex-row-reverse text-right' : 'text-left'}`}>
           {logoSrc && (
             <img src={logoSrc} alt="logo" className="h-12 w-12 object-contain rounded" />
           )}
@@ -130,14 +130,14 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
             )}
           </div>
         </div>
-        <div className="text-[22px] font-black tracking-wide" style={{ color: isCustom ? navy : 'white' }}>
+        <div className={`text-[22px] font-black tracking-wide ${settings.swapHeaderLayout ? 'text-left' : 'text-right'}`} style={{ color: isCustom ? navy : 'white' }}>
           {documentLabel}
         </div>
       </div>
 
       {/* 2. META ROW */}
-      <div className="flex justify-end px-5 pt-2 pb-1 gap-4 text-[8px] relative z-10" style={{ textShadow: bodyShadow }}>
-        <div className="text-right space-y-0.5">
+      <div className={`flex ${settings.swapHeaderLayout ? 'justify-start' : 'justify-end'} px-5 pt-2 pb-1 gap-4 text-[8px] relative z-10`} style={{ textShadow: bodyShadow }}>
+        <div className={`${settings.swapHeaderLayout ? 'text-left' : 'text-right'} space-y-0.5`}>
           <div className="text-slate-500">{invoiceNumber}</div>
           <div className="text-slate-500">Date: {form.invoiceDate || '—'}</div>
           <div className="font-bold" style={{ color: accent }}>
@@ -149,137 +149,233 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
         </div>
       </div>
 
-      <div className="mx-5 border-t border-slate-200" />
-
-      {/* 3. BILL TO / FROM */}
-      <div className="grid grid-cols-2 px-5 pt-4 pb-4 gap-4 relative z-10" style={{ textShadow: bodyShadow }}>
-        <div className="pr-4">
-          <div className="text-[12px] font-black text-black mb-1.5">BILL TO:</div>
-          <div className="text-[10px] text-black"><span className="font-bold">Name: </span>{client?.name || '— Client Name —'}</div>
-          {client?.address && <div className="text-[9px] text-black mt-1 whitespace-pre-wrap"><span className="font-bold">Address: </span>{client.address}</div>}
-          {client?.email && <div className="text-[9px] text-black mt-1"><span className="font-bold">Email: </span>{client.email}</div>}
-          {client?.phone && <div className="text-[9px] text-black mt-0.5"><span className="font-bold">Ph No: </span>{client.phone}</div>}
-          {(form.clientGST || client?.gstNumber) && <div className="text-[9px] text-black mt-1"><span className="font-bold">GSTIN: </span>{form.clientGST || client.gstNumber}</div>}
-        </div>
-        <div>
-          <div className="text-[12px] font-black text-black mb-1.5">FROM:</div>
-          <div className="text-[10px] text-black"><span className="font-bold">Name: </span>{settings.companyName || settings.name || 'Invoicefy'}</div>
-          {(settings.companyAddress || settings.address) && <div className="text-[9px] text-black mt-1 whitespace-pre-wrap"><span className="font-bold">Address: </span>{settings.companyAddress || settings.address}</div>}
-          {(settings.companyEmail || settings.email) && <div className="text-[9px] text-black mt-1"><span className="font-bold">Email: </span>{settings.companyEmail || settings.email}</div>}
-          {(settings.companyPhone || settings.phone) && <div className="text-[9px] text-black mt-0.5"><span className="font-bold">Ph No: </span>{settings.companyPhone || settings.phone}</div>}
-          {form.yourGST && <div className="text-[9px] text-black mt-1"><span className="font-bold">GSTIN: </span>{form.yourGST}</div>}
-        </div>
-      </div>
-
-      {/* 4. ENLARGED ITEMS TABLE */}
-      <div className="mx-5 mt-3 relative z-10 flex flex-col" style={{ border: '1px solid #000' }}>
-        <div className="flex text-white text-[9px] font-bold tracking-widest" style={{ background: navyBg, padding: '12px 10px' }}>
-          {cols.map((col, ci) => (
-            <div key={ci} style={{ flex: col.flex }} className={thAlign[col.align]}>
-              {col.label.split('\n').map((l, li) => <div key={li}>{l}</div>)}
+      {settings.contactsAtBottom ? (
+        <>
+          {/* ITEMS TABLE */}
+          <div className="mx-5 mt-3 relative z-10 flex flex-col" style={{ border: '1px solid #000' }}>
+            <div className="flex text-white text-[9px] font-bold tracking-widest" style={{ background: navyBg, padding: '12px 10px' }}>
+              {cols.map((col, ci) => (
+                <div key={ci} style={{ flex: col.flex }} className={thAlign[col.align]}>
+                  {col.label.split('\n').map((l, li) => <div key={li}>{l}</div>)}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* This wrapper forces the empty space below items to stretch down */}
-        <div className="flex flex-col" style={{ minHeight: '250px' }}>
-          {visibleItems.length === 0 ? (
-            <div className="text-center py-4 text-slate-400 italic text-[8px]">No items added yet…</div>
-          ) : visibleItems.map((item, idx) => {
-            const qty       = parseFloat(item.quantity) || 0;
-            const unitPrice = parseFloat(item.unitPrice) || 0;
-            const lineBase  = qty * unitPrice;
-            const cgst      = hasTax ? lineBase * (halfTax / 100) : 0;
-            const sgst      = cgst;
-            const lineTotal = hasTax ? lineBase + cgst + sgst : lineBase;
+            <div className="flex flex-col" style={{ minHeight: '250px' }}>
+              {visibleItems.length === 0 ? (
+                <div className="text-center py-4 text-slate-400 italic text-[8px]">No items added yet…</div>
+              ) : visibleItems.map((item, idx) => {
+                const qty       = parseFloat(item.quantity) || 0;
+                const unitPrice = parseFloat(item.unitPrice) || 0;
+                const lineBase  = qty * unitPrice;
+                const cgst      = hasTax ? lineBase * (halfTax / 100) : 0;
+                const sgst      = cgst;
+                const lineTotal = hasTax ? lineBase + cgst + sgst : lineBase;
 
-            return (
-              <div
-                key={idx}
-                className="flex items-center text-[9px] text-slate-900"
-                style={{
-                  padding: '12px 10px',
-                  background: isCustom ? 'transparent' : '#fff',
-                  borderBottom: showDividers ? '1px solid #E2E8F0' : 'none',
-                  textShadow: bodyShadow,
-                }}
-              >
+                return (
+                  <div key={idx} className="flex items-center text-[9px] text-slate-900" style={{ padding: '12px 10px', background: isCustom ? 'transparent' : '#fff', borderBottom: showDividers ? '1px solid #E2E8F0' : 'none', textShadow: bodyShadow }}>
+                    {hasTax ? (
+                      <>
+                        <div style={{ flex: cols[0].flex }} className="text-left">{idx + 1}. {item.description}</div>
+                        <div style={{ flex: cols[1].flex }} className="text-center">{item.hsn || '-'}</div>
+                        <div style={{ flex: cols[2].flex }} className="text-right">{fmt(lineBase)}</div>
+                        <div style={{ flex: cols[3].flex }} className="text-right">{fmt(cgst)}</div>
+                        <div style={{ flex: cols[4].flex }} className="text-right">{fmt(sgst)}</div>
+                        <div style={{ flex: cols[5].flex }} className="text-right font-semibold">{fmt(lineTotal)}</div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ flex: cols[0].flex }} className="text-left">{idx + 1}. {item.description}{item.hsn ? ` (${item.hsn})` : ''}</div>
+                        <div style={{ flex: cols[1].flex }} className="text-center">{item.hsn || '-'}</div>
+                        <div style={{ flex: cols[2].flex }} className="text-center">{qty}</div>
+                        <div style={{ flex: cols[3].flex }} className="text-right">{fmt(unitPrice)}</div>
+                        <div style={{ flex: cols[4].flex }} className="text-right font-semibold">{fmt(lineTotal)}</div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* PAYMENT INFO & TOTALS SIDE BY SIDE */}
+          <div className="flex justify-between px-5 pt-6 pb-6 items-start relative z-10" style={{ textShadow: bodyShadow }}>
+            <div className="w-[50%] pr-4">
+              {hasBD && (
+                <>
+                  <h3 className="font-extrabold text-[11px] mb-3 tracking-wide text-black">PAYMENT INFORMATION:</h3>
+                  <div className="space-y-1.5 flex flex-col">
+                    {bdRows.map(([label, value]) => (
+                      <div key={label} className="text-[10px] text-black">
+                        <span className="font-bold">{label}: </span> 
+                        <span className="font-normal">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="w-[45%] flex flex-col gap-3">
+              <div className="border border-black px-4 py-3 space-y-2 text-[10px] text-black bg-white">
                 {hasTax ? (
                   <>
-                    <div style={{ flex: cols[0].flex }} className="text-left">{idx + 1}. {item.description}</div>
-                    <div style={{ flex: cols[1].flex }} className="text-center">{item.hsn || '-'}</div>
-                    <div style={{ flex: cols[2].flex }} className="text-right">{fmt(lineBase)}</div>
-                    <div style={{ flex: cols[3].flex }} className="text-right">{fmt(cgst)}</div>
-                    <div style={{ flex: cols[4].flex }} className="text-right">{fmt(sgst)}</div>
-                    <div style={{ flex: cols[5].flex }} className="text-right font-semibold">{fmt(lineTotal)}</div>
+                    <div className="flex justify-between"><span>Taxable Amount:</span><span>{fmt(taxable)}</span></div>
+                    {discPct > 0 && <div className="flex justify-between"><span>Discount:</span><span>- {fmt(discAmt)}</span></div>}
+                    <div className="flex justify-between"><span>CGST ({halfTax}%):</span><span>{fmt(taxAmt / 2)}</span></div>
+                    <div className="flex justify-between"><span>SGST ({halfTax}%):</span><span>{fmt(taxAmt / 2)}</span></div>
                   </>
                 ) : (
                   <>
-                    <div style={{ flex: cols[0].flex }} className="text-left">
-                      {idx + 1}. {item.description}{item.hsn ? ` (${item.hsn})` : ''}
-                    </div>
-                    <div style={{ flex: cols[1].flex }} className="text-center">{item.hsn || '-'}</div>
-                    <div style={{ flex: cols[2].flex }} className="text-center">{qty}</div>
-                    <div style={{ flex: cols[3].flex }} className="text-right">{fmt(unitPrice)}</div>
-                    <div style={{ flex: cols[4].flex }} className="text-right font-semibold">{fmt(lineTotal)}</div>
+                    <div className="flex justify-between"><span>Sub Total:</span><span>{fmt(subtotal)}</span></div>
+                    {discPct > 0 && <div className="flex justify-between"><span>Discount:</span><span>- {fmt(discAmt)}</span></div>}
+                    {taxVal > 0 && <div className="flex justify-between"><span>Tax:</span><span>+ {fmt(taxAmt)}</span></div>}
                   </>
                 )}
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 5. PAYMENT INFO & TOTALS SIDE BY SIDE */}
-      <div className="flex justify-between px-5 pt-6 pb-6 items-start relative z-10 flex-grow" style={{ textShadow: bodyShadow }}>
-        
-        {/* LEFT: Payment Information */}
-        <div className="w-[50%] pr-4">
-          {hasBD && (
-            <>
-              <h3 className="font-extrabold text-[11px] mb-3 tracking-wide text-black">PAYMENT INFORMATION:</h3>
-              <div className="space-y-1.5 flex flex-col">
-                {bdRows.map(([label, value]) => (
-                  <div key={label} className="text-[10px] text-black">
-                    <span className="font-bold">{label}: </span> 
-                    <span className="font-normal">{value}</span>
-                  </div>
-                ))}
+              <div className="flex justify-between items-center text-white font-bold text-[12px] px-4 py-3 tracking-widest" style={{ background: navyBg }}>
+                <span>TOTAL:</span>
+                <span>{fmt(total)}/-</span>
               </div>
-            </>
-          )}
-        </div>
-
-        {/* RIGHT: Subtotal & Total Boxes */}
-        <div className="w-[45%] flex flex-col gap-3">
-          {/* Subtotal Outline Box */}
-          <div className="border border-black px-4 py-3 space-y-2 text-[10px] text-black bg-white">
-            {hasTax ? (
-              <>
-                <div className="flex justify-between"><span>Taxable Amount:</span><span>{fmt(taxable)}</span></div>
-                {discPct > 0 && <div className="flex justify-between"><span>Discount:</span><span>- {fmt(discAmt)}</span></div>}
-                <div className="flex justify-between"><span>CGST ({halfTax}%):</span><span>{fmt(taxAmt / 2)}</span></div>
-                <div className="flex justify-between"><span>SGST ({halfTax}%):</span><span>{fmt(taxAmt / 2)}</span></div>
-              </>
-            ) : (
-              <>
-                <div className="flex justify-between"><span>Sub Total:</span><span>{fmt(subtotal)}</span></div>
-                {discPct > 0 && <div className="flex justify-between"><span>Discount:</span><span>- {fmt(discAmt)}</span></div>}
-                {taxVal > 0 && <div className="flex justify-between"><span>Tax:</span><span>+ {fmt(taxAmt)}</span></div>}
-              </>
-            )}
+            </div>
           </div>
 
-          {/* Solid Grand Total Box */}
-          <div 
-            className="flex justify-between items-center text-white font-bold text-[12px] px-4 py-3 tracking-widest"
-            style={{ background: navyBg }}
-          >
-            <span>TOTAL:</span>
-            <span>{fmt(total)}/-</span>
+          <div className="mx-5 border-t border-slate-200" />
+          
+          {/* BILL TO / FROM */}
+          <div className="grid grid-cols-2 px-5 pt-6 pb-6 gap-4 relative z-10 flex-grow" style={{ textShadow: bodyShadow }}>
+            <div className="pr-4">
+              <div className="text-[12px] font-black text-black mb-1.5">BILL TO:</div>
+              <div className="text-[10px] text-black"><span className="font-bold">Name: </span>{client?.name || '— Client Name —'}</div>
+              {client?.address && <div className="text-[9px] text-black mt-1 whitespace-pre-wrap"><span className="font-bold">Address: </span>{client.address}</div>}
+              {client?.email && <div className="text-[9px] text-black mt-1"><span className="font-bold">Email: </span>{client.email}</div>}
+              {client?.phone && <div className="text-[9px] text-black mt-0.5"><span className="font-bold">Ph No: </span>{client.phone}</div>}
+              {(form.clientGST || client?.gstNumber) && <div className="text-[9px] text-black mt-1"><span className="font-bold">GSTIN: </span>{form.clientGST || client.gstNumber}</div>}
+            </div>
+            <div>
+              <div className="text-[12px] font-black text-black mb-1.5">FROM:</div>
+              <div className="text-[10px] text-black"><span className="font-bold">Name: </span>{settings.companyName || settings.name || 'Invoicefy'}</div>
+              {(settings.companyAddress || settings.address) && <div className="text-[9px] text-black mt-1 whitespace-pre-wrap"><span className="font-bold">Address: </span>{settings.companyAddress || settings.address}</div>}
+              {(settings.companyEmail || settings.email) && <div className="text-[9px] text-black mt-1"><span className="font-bold">Email: </span>{settings.companyEmail || settings.email}</div>}
+              {(settings.companyPhone || settings.phone) && <div className="text-[9px] text-black mt-0.5"><span className="font-bold">Ph No: </span>{settings.companyPhone || settings.phone}</div>}
+              {form.yourGST && <div className="text-[9px] text-black mt-1"><span className="font-bold">GSTIN: </span>{form.yourGST}</div>}
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      ) : (
+        <>
+          <div className="mx-5 border-t border-slate-200" />
+          
+          {/* BILL TO / FROM */}
+          <div className="grid grid-cols-2 px-5 pt-4 pb-4 gap-4 relative z-10" style={{ textShadow: bodyShadow }}>
+            <div className="pr-4">
+              <div className="text-[12px] font-black text-black mb-1.5">BILL TO:</div>
+              <div className="text-[10px] text-black"><span className="font-bold">Name: </span>{client?.name || '— Client Name —'}</div>
+              {client?.address && <div className="text-[9px] text-black mt-1 whitespace-pre-wrap"><span className="font-bold">Address: </span>{client.address}</div>}
+              {client?.email && <div className="text-[9px] text-black mt-1"><span className="font-bold">Email: </span>{client.email}</div>}
+              {client?.phone && <div className="text-[9px] text-black mt-0.5"><span className="font-bold">Ph No: </span>{client.phone}</div>}
+              {(form.clientGST || client?.gstNumber) && <div className="text-[9px] text-black mt-1"><span className="font-bold">GSTIN: </span>{form.clientGST || client.gstNumber}</div>}
+            </div>
+            <div>
+              <div className="text-[12px] font-black text-black mb-1.5">FROM:</div>
+              <div className="text-[10px] text-black"><span className="font-bold">Name: </span>{settings.companyName || settings.name || 'Invoicefy'}</div>
+              {(settings.companyAddress || settings.address) && <div className="text-[9px] text-black mt-1 whitespace-pre-wrap"><span className="font-bold">Address: </span>{settings.companyAddress || settings.address}</div>}
+              {(settings.companyEmail || settings.email) && <div className="text-[9px] text-black mt-1"><span className="font-bold">Email: </span>{settings.companyEmail || settings.email}</div>}
+              {(settings.companyPhone || settings.phone) && <div className="text-[9px] text-black mt-0.5"><span className="font-bold">Ph No: </span>{settings.companyPhone || settings.phone}</div>}
+              {form.yourGST && <div className="text-[9px] text-black mt-1"><span className="font-bold">GSTIN: </span>{form.yourGST}</div>}
+            </div>
+          </div>
+
+          {/* ITEMS TABLE */}
+          <div className="mx-5 mt-3 relative z-10 flex flex-col" style={{ border: '1px solid #000' }}>
+            <div className="flex text-white text-[9px] font-bold tracking-widest" style={{ background: navyBg, padding: '12px 10px' }}>
+              {cols.map((col, ci) => (
+                <div key={ci} style={{ flex: col.flex }} className={thAlign[col.align]}>
+                  {col.label.split('\n').map((l, li) => <div key={li}>{l}</div>)}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-col" style={{ minHeight: '250px' }}>
+              {visibleItems.length === 0 ? (
+                <div className="text-center py-4 text-slate-400 italic text-[8px]">No items added yet…</div>
+              ) : visibleItems.map((item, idx) => {
+                const qty       = parseFloat(item.quantity) || 0;
+                const unitPrice = parseFloat(item.unitPrice) || 0;
+                const lineBase  = qty * unitPrice;
+                const cgst      = hasTax ? lineBase * (halfTax / 100) : 0;
+                const sgst      = cgst;
+                const lineTotal = hasTax ? lineBase + cgst + sgst : lineBase;
+
+                return (
+                  <div key={idx} className="flex items-center text-[9px] text-slate-900" style={{ padding: '12px 10px', background: isCustom ? 'transparent' : '#fff', borderBottom: showDividers ? '1px solid #E2E8F0' : 'none', textShadow: bodyShadow }}>
+                    {hasTax ? (
+                      <>
+                        <div style={{ flex: cols[0].flex }} className="text-left">{idx + 1}. {item.description}</div>
+                        <div style={{ flex: cols[1].flex }} className="text-center">{item.hsn || '-'}</div>
+                        <div style={{ flex: cols[2].flex }} className="text-right">{fmt(lineBase)}</div>
+                        <div style={{ flex: cols[3].flex }} className="text-right">{fmt(cgst)}</div>
+                        <div style={{ flex: cols[4].flex }} className="text-right">{fmt(sgst)}</div>
+                        <div style={{ flex: cols[5].flex }} className="text-right font-semibold">{fmt(lineTotal)}</div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ flex: cols[0].flex }} className="text-left">{idx + 1}. {item.description}{item.hsn ? ` (${item.hsn})` : ''}</div>
+                        <div style={{ flex: cols[1].flex }} className="text-center">{item.hsn || '-'}</div>
+                        <div style={{ flex: cols[2].flex }} className="text-center">{qty}</div>
+                        <div style={{ flex: cols[3].flex }} className="text-right">{fmt(unitPrice)}</div>
+                        <div style={{ flex: cols[4].flex }} className="text-right font-semibold">{fmt(lineTotal)}</div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* PAYMENT INFO & TOTALS SIDE BY SIDE */}
+          <div className="flex justify-between px-5 pt-6 pb-6 items-start relative z-10 flex-grow" style={{ textShadow: bodyShadow }}>
+            <div className="w-[50%] pr-4">
+              {hasBD && (
+                <>
+                  <h3 className="font-extrabold text-[11px] mb-3 tracking-wide text-black">PAYMENT INFORMATION:</h3>
+                  <div className="space-y-1.5 flex flex-col">
+                    {bdRows.map(([label, value]) => (
+                      <div key={label} className="text-[10px] text-black">
+                        <span className="font-bold">{label}: </span> 
+                        <span className="font-normal">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="w-[45%] flex flex-col gap-3">
+              <div className="border border-black px-4 py-3 space-y-2 text-[10px] text-black bg-white">
+                {hasTax ? (
+                  <>
+                    <div className="flex justify-between"><span>Taxable Amount:</span><span>{fmt(taxable)}</span></div>
+                    {discPct > 0 && <div className="flex justify-between"><span>Discount:</span><span>- {fmt(discAmt)}</span></div>}
+                    <div className="flex justify-between"><span>CGST ({halfTax}%):</span><span>{fmt(taxAmt / 2)}</span></div>
+                    <div className="flex justify-between"><span>SGST ({halfTax}%):</span><span>{fmt(taxAmt / 2)}</span></div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between"><span>Sub Total:</span><span>{fmt(subtotal)}</span></div>
+                    {discPct > 0 && <div className="flex justify-between"><span>Discount:</span><span>- {fmt(discAmt)}</span></div>}
+                    {taxVal > 0 && <div className="flex justify-between"><span>Tax:</span><span>+ {fmt(taxAmt)}</span></div>}
+                  </>
+                )}
+              </div>
+              <div className="flex justify-between items-center text-white font-bold text-[12px] px-4 py-3 tracking-widest" style={{ background: navyBg }}>
+                <span>TOTAL:</span>
+                <span>{fmt(total)}/-</span>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* 6. FOOTER BAR */}
       <div className="px-5 mt-auto flex items-center justify-center relative z-10" style={{ background: isCustom ? 'transparent' : navy, minHeight: 32, textShadow: isCustom ? bodyShadow : 'none' }}>

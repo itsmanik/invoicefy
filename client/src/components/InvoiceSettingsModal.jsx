@@ -369,6 +369,35 @@ export default function InvoiceSettingsModal({ open, onClose, settings, onChange
                   placeholder="INV"
                 />
               </div>
+
+              <div className="border border-slate-200 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">Header Layout Switch</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Move Logo and Company details to the right side</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onChange({ ...settings, swapHeaderLayout: !settings.swapHeaderLayout })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.swapHeaderLayout ? 'bg-blue-600' : 'bg-slate-300'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${settings.swapHeaderLayout ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+
+              <div className="border border-slate-200 rounded-xl p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">Bill To &amp; From Position</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Show contacts section at the bottom of the invoice</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onChange({ ...settings, contactsAtBottom: !settings.contactsAtBottom })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings.contactsAtBottom ? 'bg-blue-600' : 'bg-slate-300'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${settings.contactsAtBottom ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+
               <div className="border border-slate-200 rounded-xl p-4 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-slate-800">Background Watermark</p>

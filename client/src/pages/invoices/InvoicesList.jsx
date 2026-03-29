@@ -112,7 +112,7 @@ const handlePreviewPDF = (id) => {
                                             </span>
                                         </td>
                                         <td className="px-8 py-5 whitespace-nowrap text-sm font-medium text-slate-900">
-                                            {invoice.client?.name || `Client #${invoice.clientId}`}
+                                            {invoice.Client?.name || invoice.client?.name || 'Unknown Client'}
                                         </td>
                                         <td className="px-8 py-5 whitespace-nowrap text-sm text-slate-500">
                                             {new Date(invoice.invoiceDate || invoice.createdAt).toLocaleDateString()}
