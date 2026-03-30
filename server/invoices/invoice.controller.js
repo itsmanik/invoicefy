@@ -11,7 +11,7 @@ const getNextDocumentNumber = async (businessId, documentType) => {
   const prefix = documentType === 'quotation' ? 'QUO' : 'INV';
   const where = { documentType };
 
-  if (businessId) {
+  if (Number.isInteger(businessId)) {
     where.businessId = businessId;
   }
 
@@ -29,6 +29,23 @@ const getNextDocumentNumber = async (businessId, documentType) => {
   }, 0);
 
   return `${prefix}-${String(maxSerial + 1).padStart(4, '0')}`;
+};
+
+const createInvoiceWithNumberRetry = async ({ invoicePayload, businessId, documentType, maxRetries = 8 }) => {
+  for (let attempt = 0; attempt < maxRetries; attempt += 1) {
+    try {
+      return await Invoice.create({
+        ...invoicePayload,
+        invoiceNumber: await getNextDocumentNumber(businessId, documentType),
+      });
+    } catch (err) {
+      if (err.name !== 'SequelizeUniqueConstraintError') {
+        throw err;
+      }
+    }
+  }
+
+  return null;
 };
 
 // const sanitizeTemplateSettings = (template, settings = {}) => {
@@ -180,18 +197,14 @@ exports.createInvoice = async (req, res) => {
     const numberingScopes = [businessId, null];
 
     for (const scopeBusinessId of numberingScopes) {
-      try {
-        const invoice = await Invoice.create({
-          ...invoicePayload,
-          invoiceNumber: await getNextDocumentNumber(scopeBusinessId, safeDocumentType),
-        });
+      const invoice = await createInvoiceWithNumberRetry({
+        invoicePayload,
+        businessId: scopeBusinessId,
+        documentType: safeDocumentType,
+      });
 
+      if (invoice) {
         return res.status(201).json({ success: true, invoice });
-      } catch (err) {
-        if (err.name !== 'SequelizeUniqueConstraintError') {
-          throw err;
-        }
-
       }
     }
 
