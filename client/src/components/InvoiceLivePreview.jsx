@@ -113,8 +113,20 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
         />
       )}
 
+      {/* BACKGROUND WATERMARK */}
+      {form.watermark && (
+        <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-hidden select-none">
+          <div 
+            className="text-[90px] font-black uppercase tracking-widest text-[#000000] opacity-[0.04] transform -rotate-45"
+            style={{ textShadow: 'none' }}
+          >
+            {form.watermark}
+          </div>
+        </div>
+      )}
+
       {/* 1. HEADER BAR */}
-      <div className={`flex items-center justify-between px-5 py-3 relative z-10 ${settings.swapHeaderLayout ? 'flex-row-reverse' : ''}`} style={{ background: isCustom ? 'transparent' : navy, minHeight: 72, textShadow: isCustom ? bodyShadow : 'none' }}>
+      <div className={`flex items-center justify-between px-5 py-3 relative z-10 ${settings.swapHeaderLayout ? 'flex-row-reverse' : ''}`} style={{ background: isCustom ? 'transparent' : (['bold', 'minimal'].includes(template) ? `linear-gradient(to right, ${navy}, ${accent})` : navy), minHeight: 72, textShadow: isCustom ? bodyShadow : 'none' }}>
         <div className={`flex items-center gap-2.5 ${settings.swapHeaderLayout ? 'flex-row-reverse text-right' : 'text-left'}`}>
           {logoSrc && (
             <img src={logoSrc} alt="logo" className="h-12 w-12 object-contain rounded" />
@@ -140,7 +152,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
         <div className={`${settings.swapHeaderLayout ? 'text-left' : 'text-right'} space-y-0.5`}>
           <div className="text-slate-500">{invoiceNumber}</div>
           <div className="text-slate-500">Date: {form.invoiceDate || '—'}</div>
-          <div className="font-bold" style={{ color: accent }}>
+          <div className="font-bold" style={{ color: template === 'minimal' ? '#334155' : accent }}>
             Due: {form.invoiceDate
               ? new Date(new Date(form.invoiceDate).getTime() + 30*24*60*60*1000)
                   .toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
@@ -378,7 +390,7 @@ export default function InvoiceLivePreview({ form, settings, clients }) {
       )}
 
       {/* 6. FOOTER BAR */}
-      <div className="px-5 mt-auto flex items-center justify-center relative z-10" style={{ background: isCustom ? 'transparent' : navy, minHeight: 32, textShadow: isCustom ? bodyShadow : 'none' }}>
+      <div className="px-5 mt-auto flex items-center justify-center relative z-10" style={{ background: isCustom ? 'transparent' : (['bold', 'minimal'].includes(template) ? `linear-gradient(to right, ${navy}, ${accent})` : navy), minHeight: 32, textShadow: isCustom ? bodyShadow : 'none' }}>
         <div className="text-[7.5px] text-center" style={{ color: isCustom ? '#1E293B' : '#CBD5E1' }}>
           {form.disclaimer || 'Payment expected within 45 days from invoice date.'}
         </div>

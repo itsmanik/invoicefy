@@ -141,6 +141,14 @@ function App() {
                             </PrivateRoute>
                         }
                     />
+                    <Route
+                        path="/invoices/edit/:id"
+                        element={
+                            <PrivateRoute>
+                                <InvoicePro />
+                            </PrivateRoute>
+                        }
+                    />
                     <Route path="/" element={<Navigate to="/dashboard" />} />
                 </Routes>
             </AuthProvider>

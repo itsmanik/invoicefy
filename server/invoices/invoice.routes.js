@@ -1,12 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { createInvoice, getInvoice, updateStatus, downloadInvoice, getInvoicePDF } = require('./invoice.controller');
+const { createInvoice, getInvoice, updateStatus, downloadInvoice, updateInvoice, getInvoicePDF } = require('./invoice.controller');
 const { requireAuth } = require('../middleware/auth.middleware');
 const Invoice = require('./invoice.model');
 const Client = require('../clients/client.model');
 
 // POST /api/invoices/create
 router.post('/create', requireAuth, createInvoice);
+
+// PUT /api/invoices/:id
+router.put('/:id', requireAuth, updateInvoice);
 
 // GET /api/invoices/all
 router.get('/all', requireAuth, async (req, res) => {

@@ -75,7 +75,15 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
 
   // 1. HEADER
   const HEADER_H = 90;
-  if (!backgroundSource) doc.rect(0, 0, PAGE_W, HEADER_H).fill(navy);
+  if (!backgroundSource) {
+    if (colors.isBold && colors.accent) {
+      const grad = doc.linearGradient(0, 0, PAGE_W, 0);
+      grad.stop(0, navy).stop(1, colors.accent);
+      doc.rect(0, 0, PAGE_W, HEADER_H).fill(grad);
+    } else {
+      doc.rect(0, 0, PAGE_W, HEADER_H).fill(navy);
+    }
+  }
 
   const logoSize   = 50;
   const headerTextColor = backgroundSource ? navy : white;
@@ -112,11 +120,15 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   // 2. META
   const META_Y      = HEADER_H + 8;
   const invoiceDate = new Date(invoice.invoiceDate || invoice.createdAt);
+  const dueDate     = new Date(invoiceDate.getTime() + 30 * 24 * 60 * 60 * 1000);
   const fmtDate     = (d) => d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
   doc.fillColor(mutedText).fontSize(8.5).font('Helvetica')
      .text(invoice.invoiceNumber, MARGIN, META_Y, { width: CONTENT, align: settings.swapHeaderLayout ? 'left' : 'right', lineBreak: false })
      .text('Date: ' + fmtDate(invoiceDate), MARGIN, META_Y + 12, { width: CONTENT, align: settings.swapHeaderLayout ? 'left' : 'right', lineBreak: false });
+  const dueDateColor = colors.isMinimal ? '#334155' : (settings.accentColor || navy);
+  doc.fillColor(dueDateColor).font('Helvetica-Bold')
+     .text('Due: ' + fmtDate(dueDate), MARGIN, META_Y + 24, { width: CONTENT, align: settings.swapHeaderLayout ? 'left' : 'right', lineBreak: false });
 
   const DIVIDER_Y = META_Y + 40;
   doc.strokeColor(borderColor).lineWidth(0.8).moveTo(MARGIN, DIVIDER_Y).lineTo(PAGE_W - MARGIN, DIVIDER_Y).stroke();
@@ -315,14 +327,34 @@ const renderInvoiceLayout = (doc, invoice, client, settings, watermark, logoSour
   const FOOTER_H = 36;
   const FOOTER_Y = PAGE_H - FOOTER_H;
 
-  if (!backgroundSource) doc.rect(0, FOOTER_Y, PAGE_W, FOOTER_H).fill(navy);
+  if (!backgroundSource) {
+    if (colors.isBold && colors.accent) {
+      const grad = doc.linearGradient(0, 0, PAGE_W, 0);
+      grad.stop(0, navy).stop(1, colors.accent);
+      doc.rect(0, FOOTER_Y, PAGE_W, FOOTER_H).fill(grad);
+    } else {
+      doc.rect(0, FOOTER_Y, PAGE_W, FOOTER_H).fill(navy);
+    }
+  }
   doc.fillColor(backgroundSource ? '#1E293B' : '#CBD5E1').fontSize(8).font('Helvetica')
      .text(invoice.disclaimer || 'Payment expected within 45 days from invoice date.', MARGIN, FOOTER_Y + 12, { align: 'center', width: CONTENT });
+
+  // 7. BACKGROUND WATERMARK
+  if (watermark) {
+    doc.save()
+       .rotate(-45, { origin: [PAGE_W / 2, PAGE_H / 2] })
+       .fontSize(100)
+       .font('Helvetica-Bold')
+       .fillColor('#000000')
+       .fillOpacity(0.04)
+       .text(watermark.toUpperCase(), 0, PAGE_H / 2 - 50, { width: PAGE_W, align: 'center', lineBreak: false })
+       .restore();
+  }
 };
 
 const renderClassic = (doc, i, c, s, w, ls, bs) => renderInvoiceLayout(doc, i, c, s, w, ls, { navy: s.headerColor, white: '#FFF', bodyText: '#1E293B', mutedText: '#64748B', borderColor: '#E2E8F0', tableHeaderBg: s.headerColor }, bs);
-const renderMinimal = (doc, i, c, s, w, ls, bs) => renderInvoiceLayout(doc, i, c, s, w, ls, { navy: s.headerColor, white: '#FFF', bodyText: '#111827', mutedText: '#6B7280', borderColor: '#D1D5DB', tableHeaderBg: s.headerColor }, bs);
-const renderBold    = (doc, i, c, s, w, ls, bs) => renderInvoiceLayout(doc, i, c, s, w, ls, { navy: s.headerColor, white: '#FFF', bodyText: '#334155', mutedText: '#64748B', borderColor: '#CBD5E1', tableHeaderBg: s.headerColor }, bs);
+const renderMinimal = (doc, i, c, s, w, ls, bs) => renderInvoiceLayout(doc, i, c, s, w, ls, { navy: s.headerColor, accent: s.accentColor, isBold: true, isMinimal: true, white: '#FFF', bodyText: '#111827', mutedText: '#6B7280', borderColor: '#D1D5DB', tableHeaderBg: s.headerColor }, bs);
+const renderBold    = (doc, i, c, s, w, ls, bs) => renderInvoiceLayout(doc, i, c, s, w, ls, { navy: s.headerColor, accent: s.accentColor, isBold: true, white: '#FFF', bodyText: '#334155', mutedText: '#64748B', borderColor: '#CBD5E1', tableHeaderBg: s.headerColor }, bs);
 
 exports.generatePDF = async (invoice, client, res, template = 'classic', watermark = '', assetBaseUrl = '') => {
   const doc = new PDFDocument({ size: 'A4', margin: 0, autoFirstPage: false, bufferPages: true, layout: 'portrait' });

@@ -103,7 +103,7 @@ const NewInvoice = () => {
   const [yourGST, setYourGST] = useState('');
   const [clientGST, setClientGST] = useState('');
   const [disclaimer, setDisclaimer] = useState('Payment expected within 45 days from invoice date. Invoice will not be valid after 45 days.');
-  const [bankDetails, setBankDetails] = useState({ accountName: '', accountNumber: '', ifsc: '', bankName: '', upiId: '' });
+  const [bankDetails, setBankDetails] = useState({ accountName: '', accountNumber: '', ifsc: '', bankName: '', upiId: '', panNumber: '' });
   const [template,   setTemplate]   = useState('classic');   // ← NEW
   const [watermark,  setWatermark]  = useState('');          // ← NEW
 
@@ -451,7 +451,7 @@ const NewInvoice = () => {
 
               <div className="space-y-3 bg-slate-50 p-6 rounded-3xl border border-slate-100 h-fit">
                 <h4 className="font-bold text-slate-900 mb-2">Payment / Bank Details</h4>
-                {['accountName','accountNumber','ifsc','bankName','upiId'].map((field) => (
+                {['accountName','accountNumber','ifsc','bankName','upiId', 'panNumber'].map((field) => (
                   <input
                     key={field}
                     type="text"

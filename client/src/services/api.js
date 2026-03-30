@@ -75,6 +75,7 @@ export const clientsAPI = {
 // Invoices APIs
 export const invoicesAPI = {
   create: (invoiceData) => api.post('/invoices/create', invoiceData),
+  update: (id, data) => api.put(`/invoices/${id}`, data),
   getAll: () => api.get('/invoices/all'),
   getById: (id) => api.get(`/invoices/${id}`),
   updateStatus: (id, status) => api.put(`/invoices/${id}/status`, { status }),

@@ -51,9 +51,26 @@ const InvoicesList = () => {
         }
     };
    
-const handlePreviewPDF = (id) => {
-    window.open(`${process.env.REACT_APP_API_URL}/invoices/pdf/${id}`, '_blank');
-};
+    const handlePreviewPDF = async (id) => {
+        const newWindow = window.open('', '_blank');
+        if (newWindow) newWindow.document.write('<div style="font-family:sans-serif; text-align:center; padding: 50px;">Loading PDF preview...</div>');
+        
+        try {
+            toast.loading('Opening preview...', { id: 'preview-toast' });
+            const res = await invoicesAPI.downloadPDF(id);
+            const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+            if (newWindow) {
+                newWindow.location.href = url;
+            } else {
+                window.open(url, '_blank');
+            }
+            toast.success('Preview ready!', { id: 'preview-toast' });
+        } catch (error) {
+            console.error('Preview PDF error:', error);
+            if (newWindow) newWindow.close();
+            toast.error('Failed to open preview', { id: 'preview-toast' });
+        }
+    };
     const handleStatusChange = async (id, newStatus) => {
         try {
             const res = await invoicesAPI.updateStatus(id, newStatus);
@@ -136,11 +153,17 @@ const handlePreviewPDF = (id) => {
                                         </td>
                                       <td className="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="flex gap-2 justify-end">
+                                                <Link
+                                                   to={`/invoices/edit/${invoice.id}`}
+                                                   className="px-3 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg transition-colors font-semibold"
+                                                >
+                                                   Edit
+                                                </Link>
                                                <button
                                                    onClick={() => handlePreviewPDF(invoice.id)}
                                                    className="px-3 py-2 bg-blue-100 text-blue-700 hover:bg-blue-600 hover:text-white rounded-lg transition-colors font-semibold"
                                                  >
-                                                 Preview
+                                                 View
                                                </button>
 
                                               <button

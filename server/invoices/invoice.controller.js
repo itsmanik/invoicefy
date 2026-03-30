@@ -170,7 +170,7 @@ exports.createInvoice = async (req, res) => {
       discount,
       total: totals.total,
 
-      status: 'Unpaid',
+      status: (watermark && watermark.trim().toUpperCase() === 'PAID') ? 'Paid' : 'Unpaid',
       documentType: safeDocumentType,
       template: safeTemplate,
       watermark: watermark.trim(),
@@ -208,6 +208,66 @@ exports.createInvoice = async (req, res) => {
       });
     }
 
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ── UPDATE ONE ─────────────────────────────────────────────────────────────
+exports.updateInvoice = async (req, res) => {
+  try {
+    const businessId = req.user.businessId;
+    const invoiceId = req.params.id;
+
+    const invoice = await Invoice.findOne({ where: { id: invoiceId, businessId } });
+    if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
+
+    const {
+      clientId, items, tax = 0, discount = 0, disclaimer,
+      invoiceDate, yourGST, clientGST, bankDetails,
+      documentType, template, watermark = '', templateSettings
+    } = req.body;
+
+    if (!clientId || !items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
+    const client = await Client.findOne({ where: { id: clientId, businessId } });
+    if (!client) return res.status(404).json({ success: false, message: 'Client not found' });
+
+    const safeDocumentType = ['invoice', 'quotation'].includes(documentType) ? documentType : 'invoice';
+    const safeTemplate = ['classic', 'minimal', 'bold', 'custom'].includes(template) ? template : 'classic';
+
+    const updatedItems = items.map((item) => ({
+      description: item.description,
+      hsn: item.hsn || '',
+      quantity: Number(item.quantity) || 1,
+      unitPrice: Number(item.unitPrice) || 0,
+    }));
+
+    const totals = calculateTotals(updatedItems, tax, discount);
+
+    await invoice.update({
+      clientId,
+      invoiceDate: invoiceDate || invoice.invoiceDate,
+      yourGST: (yourGST || '').trim(),
+      clientGST: (clientGST || client.gstNumber || '').trim(),
+      bankDetails: bankDetails && Object.values(bankDetails).some((val) => String(val || '').trim()) ? bankDetails : null,
+      disclaimer: disclaimer || invoice.disclaimer,
+      items: updatedItems,
+      subtotal: totals.subtotal,
+      tax: totals.tax,
+      discount,
+      total: totals.total,
+      status: (watermark && watermark.trim().toUpperCase() === 'PAID') ? 'Paid' : invoice.status,
+      documentType: safeDocumentType,
+      template: safeTemplate,
+      watermark: watermark.trim(),
+      templateSettings: templateSettings || {}
+    });
+
+    return res.status(200).json({ success: true, invoice });
+  } catch (err) {
+    console.error("UPDATE INVOICE ERROR:", err);
     return res.status(500).json({ success: false, message: err.message });
   }
 };

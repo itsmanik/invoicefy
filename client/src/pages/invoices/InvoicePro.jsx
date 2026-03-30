@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { invoicesAPI, clientsAPI, getAssetUrl } from '../../services/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import InvoiceSettingsModal from '../../components/InvoiceSettingsModal';
@@ -23,6 +23,7 @@ const WATERMARK_PRESETS = ['', 'DRAFT', 'PAID', 'CONFIDENTIAL', 'SAMPLE', 'VOID'
 
 const InvoicePro = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
 
   const [loading,    setLoading]    = useState(true);
   const [clients,    setClients]    = useState([]);
@@ -81,9 +82,59 @@ const InvoicePro = () => {
         customTemplateUrl: prev.customTemplateUrl || customTemplateUrl,
         customTemplatePreview: prev.customTemplateUrl === customTemplateUrl ? (prev.customTemplatePreview || customTemplatePreview) : customTemplatePreview,
       }));
-      if (biz.gstNumber) setForm(f => ({ ...f, yourGST: biz.gstNumber }));
-    } catch {
-      toast.error('Failed to load clients.');
+      
+      if (id) {
+        const invRes = await invoicesAPI.getById(id);
+        const inv = invRes.data?.invoice || invRes.data;
+        if (inv) {
+          setForm(f => ({
+            ...f,
+            documentType: inv.documentType || 'invoice',
+            clientId: inv.clientId || '',
+            invoiceDate: inv.invoiceDate ? new Date(inv.invoiceDate).toISOString().split('T')[0] : (inv.createdAt ? new Date(inv.createdAt).toISOString().split('T')[0] : f.invoiceDate),
+            yourGST: inv.yourGST || '',
+            clientGST: inv.clientGST || '',
+            items: inv.items && inv.items.length ? inv.items : [{ description: '', hsn: '', quantity: 1, unitPrice: '' }],
+            tax: inv.tax || 0,
+            discount: inv.discount || 0,
+            watermark: inv.watermark || '',
+            disclaimer: inv.disclaimer || 'Payment expected within 45 days from invoice date.',
+          }));
+
+          const s = inv.templateSettings || {};
+          const bd = inv.bankDetails || {};
+          
+          setSettings(prev => ({
+            ...prev,
+            templateId: inv.template || 'classic',
+            companyName: s.companyName || prev.companyName,
+            companyEmail: s.companyEmail || prev.companyEmail,
+            companyAddress: s.companyAddress || prev.companyAddress,
+            tableColor: s.headerColor || prev.tableColor,
+            primaryColor: s.accentColor || prev.primaryColor,
+            compactMode: s.compactMode || false,
+            showRowDividers: s.showRowDividers ?? true,
+            logoUrl: s.logoUrl || prev.logoUrl,
+            logoPreview: s.logoUrl ? getAssetUrl(s.logoUrl) : prev.logoPreview,
+            customTemplateUrl: s.customTemplateUrl || prev.customTemplateUrl,
+            customTemplatePreview: s.customTemplateUrl ? getAssetUrl(s.customTemplateUrl) : prev.customTemplatePreview,
+            bgWatermark: s.bgWatermark || false,
+            swapHeaderLayout: s.swapHeaderLayout || false,
+            invoicePrefix: s.invoicePrefix || 'INV',
+            
+            accountHolderName: bd.accountName || '',
+            accountNumber: bd.accountNumber || '',
+            ifsc: bd.ifsc || '',
+            panNumber: bd.panNumber || '',
+            upiId: bd.upiId || ''
+          }));
+        }
+      } else {
+        if (biz.gstNumber) setForm(f => ({ ...f, yourGST: biz.gstNumber }));
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to load data.');
     } finally {
       setLoading(false);
     }
@@ -120,7 +171,7 @@ const InvoicePro = () => {
     if (!validItems.length) return toast.error('Add at least one valid item');
     try {
       setSubmitting(true);
-      await invoicesAPI.create({
+      const payload = {
         clientId:   form.clientId,
         items:      validItems,
         tax:        parseFloat(form.tax)      || 0,
@@ -133,6 +184,8 @@ const InvoicePro = () => {
           accountName:   settings.accountHolderName,
           accountNumber: settings.accountNumber,
           ifsc:          settings.ifsc,
+          panNumber:     settings.panNumber,
+          upiId:         settings.upiId,
         },
         documentType: form.documentType,
         template: settings.templateId,
@@ -150,11 +203,18 @@ const InvoicePro = () => {
           contactsAtBottom: settings.contactsAtBottom,
           swapHeaderLayout: settings.swapHeaderLayout,
         },
-      });
-      toast.success(`${form.documentType === 'quotation' ? 'Quotation' : 'Invoice'} created!`);
+      };
+
+      if (id) {
+        await invoicesAPI.update(id, payload);
+        toast.success(`${form.documentType === 'quotation' ? 'Quotation' : 'Invoice'} updated!`);
+      } else {
+        await invoicesAPI.create(payload);
+        toast.success(`${form.documentType === 'quotation' ? 'Quotation' : 'Invoice'} created!`);
+      }
       navigate('/invoices');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to create invoice');
+      toast.error(err.response?.data?.message || 'Failed to save document');
     } finally {
       setSubmitting(false);
     }
