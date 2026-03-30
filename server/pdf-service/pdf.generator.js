@@ -16,8 +16,14 @@ const DEFAULT_TEMPLATE_SETTINGS = {
 };
 
 const getTemplateSettings = (invoice, template) => {
-  const saved    = invoice.templateSettings && typeof invoice.templateSettings === 'object'
-                   ? invoice.templateSettings : {};
+  let saved = {};
+  if (invoice.templateSettings) {
+    if (typeof invoice.templateSettings === 'string') {
+      try { saved = JSON.parse(invoice.templateSettings); } catch (e) { saved = {}; }
+    } else if (typeof invoice.templateSettings === 'object') {
+      saved = invoice.templateSettings;
+    }
+  }
   const defaults = DEFAULT_TEMPLATE_SETTINGS[template] || DEFAULT_TEMPLATE_SETTINGS.classic;
   return {
     companyName:     saved.companyName    || 'Invoicefy',

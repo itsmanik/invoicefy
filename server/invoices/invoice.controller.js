@@ -345,16 +345,21 @@ exports.downloadInvoice = async (req, res) => {
     const forwardedProto = req.get('x-forwarded-proto');
     const assetBaseUrl = `${forwardedProto || req.protocol}://${req.get('host')}`;
 
+    let tSettings = invoice.templateSettings;
+    if (typeof tSettings === 'string') {
+      try { tSettings = JSON.parse(tSettings); } catch (e) { tSettings = {}; }
+    }
+    if (!tSettings || typeof tSettings !== 'object') tSettings = {};
+
     // Pass business profile template URL and Logo as fallback if invoice lack it
-    if (!invoice.templateSettings) invoice.templateSettings = {};
     invoice.templateSettings = {
-      ...invoice.templateSettings,
-      companyName: invoice.templateSettings.companyName || business.name,
-      companyEmail: invoice.templateSettings.companyEmail || business.email,
-      companyAddress: invoice.templateSettings.companyAddress || business.address,
-      companyPhone: invoice.templateSettings.companyPhone || business.phone,
-      customTemplateUrl: invoice.templateSettings.customTemplateUrl || business.customTemplateUrl,
-      logoUrl: invoice.templateSettings.logoUrl || business.logoUrl
+      ...tSettings,
+      companyName: tSettings.companyName || business.name,
+      companyEmail: tSettings.companyEmail || business.email,
+      companyAddress: tSettings.companyAddress || business.address,
+      companyPhone: tSettings.companyPhone || business.phone,
+      customTemplateUrl: tSettings.customTemplateUrl || business.customTemplateUrl,
+      logoUrl: tSettings.logoUrl || business.logoUrl
     };
 
     return await generatePDF(
