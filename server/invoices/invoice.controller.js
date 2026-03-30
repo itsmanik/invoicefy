@@ -7,12 +7,18 @@ const { generatePDF } = require('../pdf-service/pdf.generator');
 const VALID_TEMPLATES = ['classic', 'minimal', 'bold', 'custom'];
 const VALID_DOCUMENT_TYPES = ['invoice', 'quotation'];
 
+const toScopedBusinessId = (businessId) => {
+  const parsedBusinessId = Number(businessId);
+  return Number.isInteger(parsedBusinessId) ? parsedBusinessId : null;
+};
+
 const getNextDocumentNumber = async (businessId, documentType) => {
   const prefix = documentType === 'quotation' ? 'QUO' : 'INV';
   const where = { documentType };
+  const scopedBusinessId = toScopedBusinessId(businessId);
 
-  if (Number.isInteger(businessId)) {
-    where.businessId = businessId;
+  if (scopedBusinessId !== null) {
+    where.businessId = scopedBusinessId;
   }
 
   const invoices = await Invoice.findAll({
@@ -31,17 +37,30 @@ const getNextDocumentNumber = async (businessId, documentType) => {
   return `${prefix}-${String(maxSerial + 1).padStart(4, '0')}`;
 };
 
-const createInvoiceWithNumberRetry = async ({ invoicePayload, businessId, documentType, maxRetries = 8 }) => {
+const incrementDocumentNumber = (invoiceNumber, documentType) => {
+  const prefix = documentType === 'quotation' ? 'QUO' : 'INV';
+  const match = String(invoiceNumber || '').match(new RegExp(`^${prefix}-(\\d+)$`));
+  const currentSerial = match ? Number(match[1]) : 0;
+  const nextSerial = Number.isFinite(currentSerial) ? currentSerial + 1 : 1;
+
+  return `${prefix}-${String(nextSerial).padStart(4, '0')}`;
+};
+
+const createInvoiceWithNumberRetry = async ({ invoicePayload, businessId, documentType, maxRetries = 30 }) => {
+  let nextInvoiceNumber = await getNextDocumentNumber(businessId, documentType);
+
   for (let attempt = 0; attempt < maxRetries; attempt += 1) {
     try {
       return await Invoice.create({
         ...invoicePayload,
-        invoiceNumber: await getNextDocumentNumber(businessId, documentType),
+        invoiceNumber: nextInvoiceNumber,
       });
     } catch (err) {
       if (err.name !== 'SequelizeUniqueConstraintError') {
         throw err;
       }
+
+      nextInvoiceNumber = incrementDocumentNumber(nextInvoiceNumber, documentType);
     }
   }
 
