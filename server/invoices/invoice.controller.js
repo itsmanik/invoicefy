@@ -8,6 +8,7 @@ const VALID_TEMPLATES = ['classic', 'minimal', 'bold', 'custom'];
 const VALID_DOCUMENT_TYPES = ['invoice', 'quotation'];
 
 const toScopedBusinessId = (businessId) => {
+  if (businessId === null || businessId === undefined) return null;
   const parsedBusinessId = Number(businessId);
   return Number.isInteger(parsedBusinessId) ? parsedBusinessId : null;
 };
