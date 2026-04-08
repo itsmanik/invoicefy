@@ -18,7 +18,7 @@ Invoice.belongsTo(Business, { foreignKey: 'businessId' });
 Client.hasMany(Invoice, { foreignKey: 'clientId', onDelete: 'CASCADE' });
 Invoice.belongsTo(Client, { foreignKey: 'clientId' });
 
-sequelize.sync({ alter: true }).then(() => {
+sequelize.sync({ force: true }).then(() => {
   console.log('Database synced successfully with alter: true');
   process.exit(0);
 }).catch(console.error);
